@@ -1,0 +1,903 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="theme-color" content="#1a1a2e">
+<title>Galex · Entregas</title>
+<link rel="manifest" href="manifest.json">
+<script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
+<style>
+  :root {
+    --bg: #0f0f1a;
+    --surface: #1a1a2e;
+    --surface2: #22223a;
+    --accent: #6c63ff;
+    --accent2: #a78bfa;
+    --success: #22c55e;
+    --danger: #ef4444;
+    --text: #f1f0ff;
+    --text2: #a09fbd;
+    --border: rgba(108,99,255,0.25);
+    --radius: 14px;
+    --radius-sm: 8px;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+  body { font-family: -apple-system, 'SF Pro Display', 'Segoe UI', sans-serif; background: var(--bg); color: var(--text); min-height: 100dvh; overflow-x: hidden; }
+
+  /* ─── NAV ─── */
+  .nav { background: var(--surface); border-bottom: 1px solid var(--border); padding: 14px 20px; display: flex; align-items: center; gap: 12px; position: sticky; top: 0; z-index: 100; }
+  .nav-logo { width: 32px; height: 32px; background: var(--accent); border-radius: 8px; display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 14px; letter-spacing: -0.5px; }
+  .nav-title { font-size: 16px; font-weight: 600; }
+  .nav-sub { font-size: 12px; color: var(--text2); }
+  .nav-right { margin-left: auto; display: flex; gap: 8px; }
+  .icon-btn { width: 36px; height: 36px; border-radius: 10px; background: var(--surface2); border: 1px solid var(--border); display: flex; align-items: center; justify-content: center; cursor: pointer; color: var(--text2); font-size: 18px; transition: all 0.15s; }
+  .icon-btn:hover { background: var(--accent); color: white; border-color: var(--accent); }
+
+  /* ─── TABS ─── */
+  .tabs { display: flex; background: var(--surface); border-bottom: 1px solid var(--border); }
+  .tab { flex: 1; padding: 12px 8px; text-align: center; font-size: 13px; font-weight: 500; color: var(--text2); cursor: pointer; border-bottom: 2px solid transparent; transition: all 0.2s; }
+  .tab.active { color: var(--accent2); border-bottom-color: var(--accent); }
+
+  /* ─── PAGES ─── */
+  .page { display: none; padding: 20px; max-width: 480px; margin: 0 auto; }
+  .page.active { display: block; }
+
+  /* ─── CARDS ─── */
+  .card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 18px; margin-bottom: 16px; }
+  .card-title { font-size: 13px; font-weight: 600; color: var(--text2); text-transform: uppercase; letter-spacing: 0.8px; margin-bottom: 14px; display: flex; align-items: center; gap: 8px; }
+
+  /* ─── STEPPER ─── */
+  .stepper { display: flex; align-items: center; gap: 6px; margin-bottom: 24px; }
+  .step-dot { width: 28px; height: 28px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: 700; flex-shrink: 0; transition: all 0.3s; }
+  .step-dot.done { background: var(--success); color: white; }
+  .step-dot.active { background: var(--accent); color: white; box-shadow: 0 0 0 4px rgba(108,99,255,0.25); }
+  .step-dot.pending { background: var(--surface2); color: var(--text2); }
+  .step-line { flex: 1; height: 2px; border-radius: 2px; transition: all 0.3s; }
+  .step-line.done { background: var(--success); }
+  .step-line.pending { background: var(--surface2); }
+
+  /* ─── SCAN AREA ─── */
+  .scan-box { border: 2px dashed var(--border); border-radius: var(--radius); overflow: hidden; position: relative; min-height: 220px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 12px; cursor: pointer; transition: all 0.2s; background: var(--surface2); }
+  .scan-box:hover { border-color: var(--accent); }
+  .scan-box.scanning { border-color: var(--accent); border-style: solid; }
+  #reader { width: 100%; }
+  #reader video { border-radius: 10px; }
+  .scan-placeholder { text-align: center; padding: 20px; }
+  .scan-icon { font-size: 48px; margin-bottom: 8px; opacity: 0.5; }
+  .scan-hint { font-size: 13px; color: var(--text2); }
+
+  /* ─── PRODUCTO DETECTADO ─── */
+  .product-found { background: rgba(108,99,255,0.1); border: 1px solid var(--accent); border-radius: var(--radius-sm); padding: 14px; display: none; }
+  .product-found.show { display: block; }
+  .product-name { font-size: 16px; font-weight: 600; margin-bottom: 4px; }
+  .product-stock { font-size: 13px; color: var(--text2); }
+  .product-stock span { color: var(--accent2); font-weight: 600; }
+
+  /* ─── INPUTS ─── */
+  .field { margin-bottom: 14px; }
+  .field label { display: block; font-size: 12px; font-weight: 600; color: var(--text2); margin-bottom: 6px; text-transform: uppercase; letter-spacing: 0.6px; }
+  .field input, .field select, .field textarea {
+    width: 100%; background: var(--surface2); border: 1px solid var(--border);
+    border-radius: var(--radius-sm); padding: 11px 14px; color: var(--text);
+    font-size: 15px; font-family: inherit; outline: none; transition: border-color 0.2s;
+  }
+  .field input:focus, .field select:focus, .field textarea:focus { border-color: var(--accent); }
+  .field select option { background: var(--surface2); }
+
+  /* ─── QTY ─── */
+  .qty-control { display: flex; align-items: center; gap: 0; background: var(--surface2); border: 1px solid var(--border); border-radius: var(--radius-sm); overflow: hidden; }
+  .qty-btn { width: 48px; height: 48px; display: flex; align-items: center; justify-content: center; font-size: 22px; cursor: pointer; color: var(--text2); background: transparent; border: none; transition: all 0.15s; flex-shrink: 0; }
+  .qty-btn:active { background: var(--accent); color: white; }
+  .qty-display { flex: 1; text-align: center; font-size: 24px; font-weight: 700; color: var(--text); border-left: 1px solid var(--border); border-right: 1px solid var(--border); padding: 8px 0; }
+
+  /* ─── FIRMA ─── */
+  .sig-wrapper { position: relative; border-radius: var(--radius-sm); overflow: hidden; border: 1px solid var(--border); }
+  #sigCanvas { display: block; width: 100%; height: 160px; background: var(--surface2); cursor: crosshair; touch-action: none; }
+  .sig-clear { position: absolute; top: 8px; right: 8px; background: rgba(239,68,68,0.15); border: 1px solid rgba(239,68,68,0.3); color: #ef4444; border-radius: 6px; padding: 4px 10px; font-size: 12px; cursor: pointer; }
+  .sig-hint { font-size: 11px; color: var(--text2); text-align: center; margin-top: 6px; }
+
+  /* ─── BUTTONS ─── */
+  .btn { display: flex; align-items: center; justify-content: center; gap: 8px; width: 100%; padding: 14px; border-radius: var(--radius-sm); font-size: 15px; font-weight: 600; cursor: pointer; border: none; transition: all 0.2s; margin-top: 8px; }
+  .btn-primary { background: var(--accent); color: white; }
+  .btn-primary:hover { background: #5b52ee; }
+  .btn-primary:active { transform: scale(0.98); }
+  .btn-outline { background: transparent; color: var(--text2); border: 1px solid var(--border); }
+  .btn-success { background: var(--success); color: white; }
+  .btn:disabled { opacity: 0.4; cursor: not-allowed; }
+
+  /* ─── RESUMEN CONFIRMACIÓN ─── */
+  .summary-row { display: flex; justify-content: space-between; align-items: center; padding: 10px 0; border-bottom: 1px solid var(--border); font-size: 14px; }
+  .summary-row:last-child { border-bottom: none; }
+  .summary-key { color: var(--text2); }
+  .summary-val { font-weight: 600; text-align: right; }
+  .summary-sig-preview { width: 100%; height: 80px; border-radius: 8px; object-fit: contain; background: var(--surface2); margin-top: 8px; }
+
+  /* ─── SUCCESS ─── */
+  .success-screen { display: none; text-align: center; padding: 40px 20px; }
+  .success-screen.show { display: block; }
+  .success-circle { width: 80px; height: 80px; background: rgba(34,197,94,0.15); border: 2px solid var(--success); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 36px; margin: 0 auto 20px; }
+  .success-title { font-size: 22px; font-weight: 700; margin-bottom: 8px; }
+  .success-sub { color: var(--text2); font-size: 14px; margin-bottom: 24px; }
+
+  /* ─── HISTORIAL ─── */
+  .entry-card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 14px; margin-bottom: 10px; cursor: pointer; transition: border-color 0.2s; }
+  .entry-card:hover { border-color: var(--accent); }
+  .entry-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 6px; }
+  .entry-product { font-size: 15px; font-weight: 600; }
+  .entry-qty { background: rgba(108,99,255,0.2); color: var(--accent2); border-radius: 6px; padding: 2px 10px; font-size: 13px; font-weight: 700; }
+  .entry-meta { font-size: 12px; color: var(--text2); display: flex; gap: 12px; flex-wrap: wrap; }
+  .badge { display: inline-flex; align-items: center; gap: 4px; font-size: 11px; padding: 2px 8px; border-radius: 4px; font-weight: 600; }
+  .badge-op { background: rgba(167,139,250,0.15); color: var(--accent2); }
+
+  /* ─── INVENTARIO ─── */
+  .inv-row { display: flex; align-items: center; padding: 12px 0; border-bottom: 1px solid var(--border); gap: 12px; }
+  .inv-row:last-child { border-bottom: none; }
+  .inv-qr-btn { width: 32px; height: 32px; background: var(--surface2); border: 1px solid var(--border); border-radius: 6px; display: flex; align-items: center; justify-content: center; cursor: pointer; font-size: 16px; flex-shrink: 0; }
+  .inv-name { flex: 1; font-size: 14px; font-weight: 500; }
+  .inv-code { font-size: 11px; color: var(--text2); }
+  .inv-stock { font-size: 18px; font-weight: 700; min-width: 40px; text-align: right; }
+  .inv-stock.low { color: var(--danger); }
+  .inv-stock.ok { color: var(--success); }
+
+  /* ─── CONFIG ─── */
+  .config-section { margin-bottom: 24px; }
+  .config-label { font-size: 13px; font-weight: 600; color: var(--text2); text-transform: uppercase; letter-spacing: 0.8px; margin-bottom: 12px; }
+  .config-info { font-size: 12px; color: var(--text2); background: var(--surface2); border-radius: var(--radius-sm); padding: 12px; margin-top: 8px; line-height: 1.6; }
+  .config-info a { color: var(--accent2); }
+  .op-chip { display: inline-flex; align-items: center; gap: 6px; background: var(--surface2); border: 1px solid var(--border); border-radius: 20px; padding: 6px 12px; font-size: 13px; margin: 4px; }
+  .op-remove { cursor: pointer; color: var(--danger); font-size: 16px; line-height: 1; }
+
+  /* ─── MODAL ─── */
+  .modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.7); z-index: 200; display: none; align-items: flex-end; justify-content: center; backdrop-filter: blur(4px); }
+  .modal-overlay.show { display: flex; }
+  .modal { background: var(--surface); border-radius: var(--radius) var(--radius) 0 0; width: 100%; max-width: 480px; padding: 24px; border-top: 1px solid var(--border); animation: slideUp 0.25s ease; }
+  @keyframes slideUp { from { transform: translateY(100%); } to { transform: translateY(0); } }
+  .modal-title { font-size: 17px; font-weight: 700; margin-bottom: 16px; }
+  .modal-close { float: right; cursor: pointer; color: var(--text2); font-size: 22px; line-height: 1; }
+
+  /* ─── TOAST ─── */
+  .toast { position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%); background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 12px 20px; font-size: 14px; z-index: 300; white-space: nowrap; transition: opacity 0.3s; box-shadow: 0 8px 32px rgba(0,0,0,0.4); }
+  .toast.hide { opacity: 0; pointer-events: none; }
+
+  /* ─── QR MODAL ─── */
+  #qrCanvas { display: block; margin: 0 auto; }
+
+  /* ─── LOADER ─── */
+  .loader { display: inline-block; width: 18px; height: 18px; border: 2px solid rgba(255,255,255,0.3); border-top-color: white; border-radius: 50%; animation: spin 0.7s linear infinite; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  .empty-state { text-align: center; padding: 40px 20px; color: var(--text2); font-size: 14px; }
+  .empty-icon { font-size: 40px; margin-bottom: 12px; opacity: 0.4; }
+  .divider { height: 1px; background: var(--border); margin: 16px 0; }
+  .inline-error { font-size: 12px; color: var(--danger); margin-top: 4px; display: none; }
+  .inline-error.show { display: block; }
+</style>
+</head>
+<body>
+
+<div class="nav">
+  <div class="nav-logo">GX</div>
+  <div>
+    <div class="nav-title">Galex · Entregas</div>
+    <div class="nav-sub" id="operatorDisplay">Sin operador</div>
+  </div>
+  <div class="nav-right">
+    <div class="icon-btn" onclick="showTab('config')" title="Configuración">⚙️</div>
+  </div>
+</div>
+
+<div class="tabs">
+  <div class="tab active" onclick="showTab('nueva')" id="tab-nueva">📦 Nueva entrega</div>
+  <div class="tab" onclick="showTab('historial')" id="tab-historial">📋 Historial</div>
+  <div class="tab" onclick="showTab('inventario')" id="tab-inventario">📊 Inventario</div>
+</div>
+
+<!-- ═══════════════════════════════════════════
+     PÁGINA 1 — NUEVA ENTREGA
+════════════════════════════════════════════ -->
+<div class="page active" id="page-nueva">
+
+  <!-- STEPPER -->
+  <div class="stepper" id="stepper">
+    <div class="step-dot active" id="sd1">1</div>
+    <div class="step-line pending" id="sl1"></div>
+    <div class="step-dot pending" id="sd2">2</div>
+    <div class="step-line pending" id="sl2"></div>
+    <div class="step-dot pending" id="sd3">3</div>
+  </div>
+
+  <!-- STEP 1: SCAN -->
+  <div id="step1">
+    <div class="card">
+      <div class="card-title">📷 Escanear cupón</div>
+
+      <div class="scan-box" id="scanBox" onclick="startScanner()">
+        <div id="reader"></div>
+        <div class="scan-placeholder" id="scanPlaceholder">
+          <div class="scan-icon">⬛</div>
+          <div style="font-size:15px; font-weight:600; margin-bottom:6px;">Toca para escanear</div>
+          <div class="scan-hint">Apunta la cámara al código QR del cupón</div>
+        </div>
+      </div>
+
+      <div style="margin: 12px 0; text-align:center; color:var(--text2); font-size:13px;">— o —</div>
+
+      <div class="field">
+        <label>Código manual</label>
+        <input type="text" id="manualCode" placeholder="Ej: CUP-001" oninput="manualLookup(this.value)">
+      </div>
+
+      <div class="product-found" id="productFound">
+        <div class="product-name" id="pName">—</div>
+        <div class="product-stock">Stock actual: <span id="pStock">—</span> unidades</div>
+      </div>
+      <div class="inline-error" id="errorProduct">Código no encontrado en inventario</div>
+    </div>
+
+    <button class="btn btn-primary" id="btnStep1" onclick="goStep2()" disabled>Continuar →</button>
+  </div>
+
+  <!-- STEP 2: DETALLE -->
+  <div id="step2" style="display:none">
+    <div class="card">
+      <div class="card-title">📋 Detalle de entrega</div>
+
+      <div class="product-found show" id="pFoundStep2" style="margin-bottom:14px">
+        <div class="product-name" id="pName2">—</div>
+        <div class="product-stock">Stock: <span id="pStock2">—</span> | Código: <span id="pCode2" style="color:var(--accent2)">—</span></div>
+      </div>
+
+      <div class="field">
+        <label>Cantidad a entregar</label>
+        <div class="qty-control">
+          <button class="qty-btn" onclick="changeQty(-1)">−</button>
+          <div class="qty-display" id="qtyDisplay">1</div>
+          <button class="qty-btn" onclick="changeQty(1)">+</button>
+        </div>
+        <div class="inline-error" id="errorQty">Cantidad supera el stock disponible</div>
+      </div>
+
+      <div class="field">
+        <label>Entregar a</label>
+        <input type="text" id="receptor" placeholder="Nombre del receptor">
+      </div>
+
+      <div class="field">
+        <label>Ruta / Ubicación</label>
+        <input type="text" id="ruta" placeholder="Ej: Ruta 3 – Plaza Galerías">
+      </div>
+
+      <div class="field">
+        <label>Nota (opcional)</label>
+        <input type="text" id="nota" placeholder="Ej: Máquina 12, piso 2">
+      </div>
+    </div>
+
+    <button class="btn btn-primary" onclick="goStep3()">Continuar a firma →</button>
+    <button class="btn btn-outline" onclick="goStep1()" style="margin-top:6px">← Volver</button>
+  </div>
+
+  <!-- STEP 3: FIRMA -->
+  <div id="step3" style="display:none">
+    <div class="card">
+      <div class="card-title">✍️ Firma de conformidad</div>
+
+      <div style="margin-bottom:14px">
+        <div class="summary-row"><span class="summary-key">Cupón</span><span class="summary-val" id="sumProd">—</span></div>
+        <div class="summary-row"><span class="summary-key">Cantidad</span><span class="summary-val" id="sumQty">—</span></div>
+        <div class="summary-row"><span class="summary-key">Receptor</span><span class="summary-val" id="sumRec">—</span></div>
+        <div class="summary-row"><span class="summary-key">Ruta</span><span class="summary-val" id="sumRuta">—</span></div>
+        <div class="summary-row"><span class="summary-key">Operador</span><span class="summary-val" id="sumOp">—</span></div>
+      </div>
+
+      <div class="divider"></div>
+
+      <div style="font-size:12px; font-weight:600; color:var(--text2); text-transform:uppercase; letter-spacing:0.6px; margin-bottom:8px;">Firma del receptor</div>
+      <div class="sig-wrapper">
+        <canvas id="sigCanvas" width="600" height="200"></canvas>
+        <button class="sig-clear" onclick="clearSig()">✕ Borrar</button>
+      </div>
+      <div class="sig-hint">Firma con el dedo en el recuadro</div>
+      <div class="inline-error" id="errorSig">Se requiere firma para continuar</div>
+    </div>
+
+    <button class="btn btn-success" id="btnConfirm" onclick="confirmarEntrega()">
+      ✓ Confirmar entrega
+    </button>
+    <button class="btn btn-outline" onclick="goStep2()" style="margin-top:6px">← Volver</button>
+  </div>
+
+  <!-- SUCCESS -->
+  <div class="success-screen" id="successScreen">
+    <div class="success-circle">✓</div>
+    <div class="success-title">¡Entrega registrada!</div>
+    <div class="success-sub" id="successMsg">La entrega se guardó correctamente en Google Sheets</div>
+    <button class="btn btn-primary" onclick="resetForm()" style="max-width:240px; margin:0 auto">
+      + Nueva entrega
+    </button>
+    <button class="btn btn-outline" onclick="showTab('historial')" style="max-width:240px; margin:8px auto 0">
+      Ver historial
+    </button>
+  </div>
+
+</div>
+
+<!-- ═══════════════════════════════════════════
+     PÁGINA 2 — HISTORIAL
+════════════════════════════════════════════ -->
+<div class="page" id="page-historial">
+  <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:16px;">
+    <div style="font-size:18px; font-weight:700;">Historial</div>
+    <button class="btn btn-outline" onclick="loadHistory()" style="width:auto; padding:8px 14px; margin:0; font-size:13px;">🔄 Actualizar</button>
+  </div>
+  <div id="historialList"><div class="empty-state"><div class="empty-icon">📋</div>Cargando historial...</div></div>
+</div>
+
+<!-- ═══════════════════════════════════════════
+     PÁGINA 3 — INVENTARIO
+════════════════════════════════════════════ -->
+<div class="page" id="page-inventario">
+  <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:16px;">
+    <div style="font-size:18px; font-weight:700;">Inventario</div>
+    <button class="btn btn-outline" onclick="loadInventory()" style="width:auto; padding:8px 14px; margin:0; font-size:13px;">🔄 Actualizar</button>
+  </div>
+  <div id="inventarioList"><div class="empty-state"><div class="empty-icon">📊</div>Cargando inventario...</div></div>
+</div>
+
+<!-- ═══════════════════════════════════════════
+     PÁGINA 4 — CONFIG
+════════════════════════════════════════════ -->
+<div class="page" id="page-config">
+  <div style="font-size:18px; font-weight:700; margin-bottom:20px;">Configuración</div>
+
+  <div class="config-section">
+    <div class="config-label">Google Sheets</div>
+    <div class="field">
+      <label>Script URL (Google Apps Script)</label>
+      <input type="url" id="sheetUrl" placeholder="https://script.google.com/macros/s/.../exec">
+    </div>
+    <button class="btn btn-primary" onclick="saveConfig()" style="margin-top:0">Guardar URL</button>
+    <div class="config-info">
+      1. Abre el archivo <strong>GalexEntregas.gs</strong> en Google Apps Script<br>
+      2. Haz clic en <strong>Implementar → Nueva implementación</strong><br>
+      3. Tipo: <em>Aplicación web</em> · Acceso: <em>Cualquier persona</em><br>
+      4. Copia la URL y pégala aquí ↑
+    </div>
+  </div>
+
+  <div class="divider"></div>
+
+  <div class="config-section">
+    <div class="config-label">Operador actual</div>
+    <div class="field">
+      <label>Tu nombre</label>
+      <input type="text" id="operatorName" placeholder="Ej: Kevin" oninput="updateOperator(this.value)">
+    </div>
+  </div>
+
+  <div class="divider"></div>
+
+  <div class="config-section">
+    <div class="config-label">Operadores del equipo</div>
+    <div id="opList"></div>
+    <div style="display:flex; gap:8px; margin-top:8px;">
+      <input type="text" id="newOpInput" placeholder="Nombre del operador" style="flex:1; background:var(--surface2); border:1px solid var(--border); border-radius:var(--radius-sm); padding:10px 14px; color:var(--text); font-size:14px; outline:none;">
+      <button class="btn btn-primary" onclick="addOperator()" style="width:auto; padding:10px 16px; margin:0; font-size:14px;">+</button>
+    </div>
+  </div>
+
+  <div class="divider"></div>
+
+  <div class="config-section">
+    <div class="config-label">¿Cómo generar los QR?</div>
+    <div class="config-info">
+      En Google Sheets, usa la fórmula:<br><br>
+      <code style="color:var(--accent2);">=IMAGE("https://api.qrserver.com/v1/create-qr-code/?size=150x150&data="&A2)</code><br><br>
+      Donde <strong>A2</strong> es la celda con el código del cupón (ej: CUP-001).
+      Imprime la columna de QR como etiquetas.
+    </div>
+  </div>
+</div>
+
+<!-- ─── TOAST ─── -->
+<div class="toast hide" id="toast"></div>
+
+<!-- ─── MODAL QR ─── -->
+<div class="modal-overlay" id="qrModal">
+  <div class="modal">
+    <span class="modal-close" onclick="closeModal('qrModal')">✕</span>
+    <div class="modal-title" id="qrModalTitle">Código QR</div>
+    <canvas id="qrCanvas" width="200" height="200"></canvas>
+    <div style="text-align:center; font-size:13px; color:var(--text2); margin-top:12px;" id="qrCode"></div>
+    <button class="btn btn-outline" onclick="closeModal('qrModal')" style="margin-top:16px">Cerrar</button>
+  </div>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+<script>
+// ═══════════════════════════════════════════
+// ESTADO GLOBAL
+// ═══════════════════════════════════════════
+let state = {
+  step: 1,
+  scannedCode: null,
+  product: null,
+  qty: 1,
+  receptor: '',
+  ruta: '',
+  nota: '',
+  operator: '',
+  sigData: null,
+  inventory: [],
+  history: []
+};
+
+let config = {
+  sheetUrl: '',
+  operator: '',
+  operators: ['Kevin']
+};
+
+let scanner = null;
+let sigCanvas, sigCtx, isDrawing = false, lastX, lastY;
+
+// ═══════════════════════════════════════════
+// INIT
+// ═══════════════════════════════════════════
+window.onload = () => {
+  loadConfig();
+  initSignature();
+  loadInventory();
+  loadHistory();
+};
+
+function loadConfig() {
+  const saved = localStorage.getItem('galexConfig');
+  if (saved) {
+    config = { ...config, ...JSON.parse(saved) };
+  }
+  document.getElementById('sheetUrl').value = config.sheetUrl || '';
+  document.getElementById('operatorName').value = config.operator || '';
+  document.getElementById('operatorDisplay').textContent = config.operator || 'Sin operador';
+  state.operator = config.operator || '';
+  renderOperators();
+}
+
+function saveConfig() {
+  config.sheetUrl = document.getElementById('sheetUrl').value.trim();
+  localStorage.setItem('galexConfig', JSON.stringify(config));
+  showToast('✓ Configuración guardada');
+}
+
+function updateOperator(val) {
+  config.operator = val.trim();
+  state.operator = config.operator;
+  document.getElementById('operatorDisplay').textContent = config.operator || 'Sin operador';
+  localStorage.setItem('galexConfig', JSON.stringify(config));
+}
+
+function addOperator() {
+  const name = document.getElementById('newOpInput').value.trim();
+  if (!name) return;
+  if (!config.operators.includes(name)) {
+    config.operators.push(name);
+    localStorage.setItem('galexConfig', JSON.stringify(config));
+    renderOperators();
+  }
+  document.getElementById('newOpInput').value = '';
+}
+
+function renderOperators() {
+  const el = document.getElementById('opList');
+  el.innerHTML = config.operators.map(op =>
+    `<div class="op-chip">${op} <span class="op-remove" onclick="removeOperator('${op}')">×</span></div>`
+  ).join('');
+}
+
+function removeOperator(name) {
+  config.operators = config.operators.filter(o => o !== name);
+  localStorage.setItem('galexConfig', JSON.stringify(config));
+  renderOperators();
+}
+
+// ═══════════════════════════════════════════
+// TABS
+// ═══════════════════════════════════════════
+function showTab(tab) {
+  ['nueva','historial','inventario','config'].forEach(t => {
+    document.getElementById(`page-${t}`)?.classList.remove('active');
+    document.getElementById(`tab-${t}`)?.classList.remove('active');
+  });
+  document.getElementById(`page-${tab}`)?.classList.add('active');
+  document.getElementById(`tab-${tab}`)?.classList.add('active');
+
+  if (tab === 'historial') loadHistory();
+  if (tab === 'inventario') loadInventory();
+}
+
+// ═══════════════════════════════════════════
+// SCANNER QR
+// ═══════════════════════════════════════════
+function startScanner() {
+  if (scanner) return;
+  const placeholder = document.getElementById('scanPlaceholder');
+  placeholder.style.display = 'none';
+  document.getElementById('scanBox').classList.add('scanning');
+
+  scanner = new Html5Qrcode('reader');
+  scanner.start(
+    { facingMode: 'environment' },
+    { fps: 10, qrbox: { width: 220, height: 220 } },
+    (code) => {
+      scanner.stop().then(() => { scanner = null; });
+      processCode(code.trim());
+    },
+    () => {}
+  ).catch(() => {
+    placeholder.style.display = '';
+    document.getElementById('scanBox').classList.remove('scanning');
+    scanner = null;
+    showToast('⚠ No se pudo acceder a la cámara');
+  });
+}
+
+function processCode(code) {
+  document.getElementById('manualCode').value = code;
+  lookupProduct(code);
+}
+
+function manualLookup(val) {
+  if (val.length >= 3) lookupProduct(val.trim().toUpperCase());
+}
+
+function lookupProduct(code) {
+  const prod = state.inventory.find(p =>
+    p.codigo.toUpperCase() === code.toUpperCase()
+  );
+
+  const found = document.getElementById('productFound');
+  const errorEl = document.getElementById('errorProduct');
+  const btn = document.getElementById('btnStep1');
+
+  if (prod) {
+    state.scannedCode = code;
+    state.product = prod;
+    document.getElementById('pName').textContent = prod.nombre;
+    document.getElementById('pStock').textContent = prod.stock;
+    found.classList.add('show');
+    errorEl.classList.remove('show');
+    btn.disabled = false;
+    document.getElementById('scanBox').style.display = 'none';
+    document.getElementById('scanPlaceholder').style.display = '';
+  } else {
+    found.classList.remove('show');
+    errorEl.classList.add('show');
+    btn.disabled = true;
+    state.product = null;
+  }
+}
+
+// ═══════════════════════════════════════════
+// STEPS
+// ═══════════════════════════════════════════
+function setStep(n) {
+  state.step = n;
+  ['step1','step2','step3'].forEach((s, i) => {
+    document.getElementById(s).style.display = (i+1 === n) ? '' : 'none';
+  });
+  document.getElementById('successScreen').classList.remove('show');
+  updateStepper(n);
+}
+
+function updateStepper(n) {
+  [1,2,3].forEach(i => {
+    const dot = document.getElementById(`sd${i}`);
+    dot.className = 'step-dot ' + (i < n ? 'done' : i === n ? 'active' : 'pending');
+    if (i < 3) {
+      document.getElementById(`sl${i}`).className = 'step-line ' + (i < n ? 'done' : 'pending');
+    }
+  });
+}
+
+function goStep1() {
+  setStep(1);
+  if (scanner) { scanner.stop(); scanner = null; }
+  document.getElementById('scanBox').style.display = '';
+  document.getElementById('productFound').classList.remove('show');
+  document.getElementById('manualCode').value = '';
+  document.getElementById('btnStep1').disabled = true;
+  state.product = null;
+}
+
+function goStep2() {
+  if (!state.product) return;
+  state.qty = 1;
+  document.getElementById('qtyDisplay').textContent = '1';
+  document.getElementById('pName2').textContent = state.product.nombre;
+  document.getElementById('pStock2').textContent = state.product.stock;
+  document.getElementById('pCode2').textContent = state.scannedCode;
+  document.getElementById('receptor').value = '';
+  document.getElementById('ruta').value = '';
+  document.getElementById('nota').value = '';
+  setStep(2);
+}
+
+function goStep3() {
+  state.receptor = document.getElementById('receptor').value.trim();
+  state.ruta = document.getElementById('ruta').value.trim();
+  state.nota = document.getElementById('nota').value.trim();
+  state.qty = parseInt(document.getElementById('qtyDisplay').textContent);
+
+  if (!state.receptor) { showToast('⚠ Ingresa el nombre del receptor'); return; }
+  if (!state.ruta) { showToast('⚠ Ingresa la ruta o ubicación'); return; }
+  if (state.qty > state.product.stock) {
+    document.getElementById('errorQty').classList.add('show'); return;
+  }
+  document.getElementById('errorQty').classList.remove('show');
+
+  document.getElementById('sumProd').textContent = state.product.nombre;
+  document.getElementById('sumQty').textContent = state.qty + ' unidades';
+  document.getElementById('sumRec').textContent = state.receptor;
+  document.getElementById('sumRuta').textContent = state.ruta;
+  document.getElementById('sumOp').textContent = state.operator || '—';
+
+  clearSig();
+  setStep(3);
+}
+
+function changeQty(delta) {
+  const cur = parseInt(document.getElementById('qtyDisplay').textContent);
+  const next = Math.max(1, cur + delta);
+  document.getElementById('qtyDisplay').textContent = next;
+  state.qty = next;
+  if (state.product && next > state.product.stock) {
+    document.getElementById('errorQty').classList.add('show');
+  } else {
+    document.getElementById('errorQty').classList.remove('show');
+  }
+}
+
+// ═══════════════════════════════════════════
+// FIRMA
+// ═══════════════════════════════════════════
+function initSignature() {
+  sigCanvas = document.getElementById('sigCanvas');
+  sigCtx = sigCanvas.getContext('2d');
+  sigCtx.strokeStyle = '#a78bfa';
+  sigCtx.lineWidth = 2.5;
+  sigCtx.lineCap = 'round';
+
+  const getPos = (e) => {
+    const rect = sigCanvas.getBoundingClientRect();
+    const scaleX = sigCanvas.width / rect.width;
+    const scaleY = sigCanvas.height / rect.height;
+    if (e.touches) {
+      return [(e.touches[0].clientX - rect.left) * scaleX, (e.touches[0].clientY - rect.top) * scaleY];
+    }
+    return [(e.clientX - rect.left) * scaleX, (e.clientY - rect.top) * scaleY];
+  };
+
+  const start = (e) => { isDrawing = true; [lastX, lastY] = getPos(e); e.preventDefault(); };
+  const draw = (e) => {
+    if (!isDrawing) return;
+    e.preventDefault();
+    const [x, y] = getPos(e);
+    sigCtx.beginPath(); sigCtx.moveTo(lastX, lastY); sigCtx.lineTo(x, y); sigCtx.stroke();
+    [lastX, lastY] = [x, y];
+  };
+  const end = () => { isDrawing = false; };
+
+  sigCanvas.addEventListener('mousedown', start);
+  sigCanvas.addEventListener('mousemove', draw);
+  sigCanvas.addEventListener('mouseup', end);
+  sigCanvas.addEventListener('touchstart', start, { passive: false });
+  sigCanvas.addEventListener('touchmove', draw, { passive: false });
+  sigCanvas.addEventListener('touchend', end);
+}
+
+function clearSig() {
+  sigCtx.clearRect(0, 0, sigCanvas.width, sigCanvas.height);
+  document.getElementById('errorSig').classList.remove('show');
+}
+
+function isSigEmpty() {
+  const data = sigCtx.getImageData(0, 0, sigCanvas.width, sigCanvas.height).data;
+  return !data.some((v, i) => i % 4 === 3 && v > 0);
+}
+
+// ═══════════════════════════════════════════
+// CONFIRMAR ENTREGA → GOOGLE SHEETS
+// ═══════════════════════════════════════════
+async function confirmarEntrega() {
+  if (isSigEmpty()) {
+    document.getElementById('errorSig').classList.add('show');
+    showToast('⚠ Se requiere la firma del receptor');
+    return;
+  }
+
+  if (!config.sheetUrl) {
+    showToast('⚠ Configura la URL de Google Sheets primero');
+    showTab('config');
+    return;
+  }
+
+  const btn = document.getElementById('btnConfirm');
+  btn.disabled = true;
+  btn.innerHTML = '<div class="loader"></div> Guardando...';
+
+  const sigData = sigCanvas.toDataURL('image/png');
+  const now = new Date();
+  const fecha = now.toLocaleDateString('es-MX');
+  const hora = now.toLocaleTimeString('es-MX', { hour: '2-digit', minute: '2-digit' });
+
+  const payload = {
+    action: 'registrarEntrega',
+    codigo: state.scannedCode,
+    producto: state.product.nombre,
+    cantidad: state.qty,
+    receptor: state.receptor,
+    ruta: state.ruta,
+    nota: state.nota,
+    operador: state.operator || 'Sin asignar',
+    fecha,
+    hora,
+    firma: sigData
+  };
+
+  try {
+    const res = await fetch(config.sheetUrl, {
+      method: 'POST',
+      body: JSON.stringify(payload)
+    });
+    const json = await res.json();
+
+    if (json.status === 'ok') {
+      // Actualizar stock local
+      const item = state.inventory.find(p => p.codigo === state.scannedCode);
+      if (item) item.stock -= state.qty;
+
+      // Agregar a historial local
+      state.history.unshift({ ...payload, id: Date.now() });
+
+      // Mostrar éxito
+      ['step1','step2','step3'].forEach(s => document.getElementById(s).style.display = 'none');
+      document.getElementById('stepper').style.display = 'none';
+      document.getElementById('successScreen').classList.add('show');
+      document.getElementById('successMsg').textContent =
+        `${state.qty} cupón(es) de "${state.product.nombre}" entregados a ${state.receptor}`;
+    } else {
+      throw new Error(json.message || 'Error en servidor');
+    }
+  } catch (err) {
+    showToast('❌ Error al guardar: ' + err.message);
+    btn.disabled = false;
+    btn.innerHTML = '✓ Confirmar entrega';
+  }
+}
+
+function resetForm() {
+  document.getElementById('stepper').style.display = '';
+  document.getElementById('successScreen').classList.remove('show');
+  goStep1();
+  setStep(1);
+}
+
+// ═══════════════════════════════════════════
+// INVENTARIO
+// ═══════════════════════════════════════════
+async function loadInventory() {
+  if (!config.sheetUrl) {
+    renderInventory([]);
+    return;
+  }
+  try {
+    const res = await fetch(`${config.sheetUrl}?action=getInventario`);
+    const json = await res.json();
+    state.inventory = json.data || [];
+    renderInventory(state.inventory);
+  } catch {
+    renderInventory(state.inventory);
+  }
+}
+
+function renderInventory(items) {
+  const el = document.getElementById('inventarioList');
+  if (!items.length) {
+    el.innerHTML = `<div class="empty-state"><div class="empty-icon">📊</div>
+      Sin productos.<br><small>Agrega productos en tu Google Sheet.</small></div>`;
+    return;
+  }
+  const totalItems = items.reduce((a, b) => a + (parseInt(b.stock) || 0), 0);
+  el.innerHTML = `
+    <div class="card" style="margin-bottom:16px; display:flex; justify-content:space-around; text-align:center;">
+      <div><div style="font-size:24px;font-weight:700">${items.length}</div><div style="font-size:12px;color:var(--text2)">Productos</div></div>
+      <div><div style="font-size:24px;font-weight:700">${totalItems}</div><div style="font-size:12px;color:var(--text2)">Unidades total</div></div>
+    </div>
+    <div class="card">
+      ${items.map(p => `
+        <div class="inv-row">
+          <div class="inv-qr-btn" onclick="showQR('${p.codigo}','${p.nombre}')">⬛</div>
+          <div>
+            <div class="inv-name">${p.nombre}</div>
+            <div class="inv-code">${p.codigo}</div>
+          </div>
+          <div class="inv-stock ${parseInt(p.stock) <= (parseInt(p.minimo)||0) ? 'low' : 'ok'}">${p.stock}</div>
+        </div>
+      `).join('')}
+    </div>`;
+}
+
+function showQR(codigo, nombre) {
+  document.getElementById('qrModalTitle').textContent = nombre;
+  document.getElementById('qrCode').textContent = codigo;
+  const canvas = document.getElementById('qrCanvas');
+  const ctx = canvas.getContext('2d');
+  ctx.clearRect(0,0,200,200);
+  // Usar img con API pública de QR
+  const img = new Image();
+  img.crossOrigin = 'anonymous';
+  img.src = `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(codigo)}&color=6c63ff&bgcolor=1a1a2e`;
+  img.onload = () => ctx.drawImage(img, 0, 0, 200, 200);
+  document.getElementById('qrModal').classList.add('show');
+}
+
+// ═══════════════════════════════════════════
+// HISTORIAL
+// ═══════════════════════════════════════════
+async function loadHistory() {
+  if (!config.sheetUrl) {
+    renderHistory([]);
+    return;
+  }
+  try {
+    const res = await fetch(`${config.sheetUrl}?action=getHistorial`);
+    const json = await res.json();
+    state.history = json.data || [];
+    renderHistory(state.history);
+  } catch {
+    renderHistory(state.history);
+  }
+}
+
+function renderHistory(items) {
+  const el = document.getElementById('historialList');
+  if (!items.length) {
+    el.innerHTML = `<div class="empty-state"><div class="empty-icon">📋</div>Sin entregas aún.</div>`;
+    return;
+  }
+  el.innerHTML = items.slice(0, 50).map(e => `
+    <div class="entry-card">
+      <div class="entry-header">
+        <div class="entry-product">${e.producto || e.codigo}</div>
+        <div class="entry-qty">${e.cantidad}</div>
+      </div>
+      <div class="entry-meta">
+        <span>👤 ${e.receptor}</span>
+        <span>📍 ${e.ruta}</span>
+        <span class="badge badge-op">⚙ ${e.operador}</span>
+        <span style="margin-left:auto">${e.fecha} ${e.hora}</span>
+      </div>
+    </div>
+  `).join('');
+}
+
+// ═══════════════════════════════════════════
+// UTILS
+// ═══════════════════════════════════════════
+function showToast(msg, duration=3000) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.remove('hide');
+  setTimeout(() => t.classList.add('hide'), duration);
+}
+
+function closeModal(id) {
+  document.getElementById(id).classList.remove('show');
+}
+</script>
+</body>
+</html>
