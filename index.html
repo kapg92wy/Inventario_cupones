@@ -232,13 +232,19 @@
       </div>
 
       <div class="product-found" id="productFound">
-        <div class="product-name" id="pName">—</div>
-        <div class="product-stock">Stock actual: <span id="pStock">—</span> unidades</div>
+        <div style="display:flex; justify-content:space-between; align-items:flex-start;">
+          <div>
+            <div class="product-name" id="pName">—</div>
+            <div class="product-stock">Stock actual: <span id="pStock">—</span> unidades</div>
+          </div>
+          <button onclick="resetScan()" style="background:transparent; border:none; color:var(--text2); font-size:20px; cursor:pointer; padding:0 0 0 8px; line-height:1;" title="Volver a escanear">✕</button>
+        </div>
       </div>
       <div class="inline-error" id="errorProduct">Código no encontrado en inventario</div>
     </div>
 
     <button class="btn btn-primary" id="btnStep1" onclick="goStep2()" disabled>Continuar →</button>
+    <button class="btn btn-outline" id="btnReScan" onclick="resetScan()" style="display:none; margin-top:6px;">↩ Volver a escanear</button>
   </div>
 
   <!-- STEP 2: DETALLE -->
@@ -562,6 +568,7 @@ function lookupProduct(code) {
   const found = document.getElementById('productFound');
   const errorEl = document.getElementById('errorProduct');
   const btn = document.getElementById('btnStep1');
+  const btnReScan = document.getElementById('btnReScan');
 
   if (prod) {
     state.scannedCode = code;
@@ -571,14 +578,30 @@ function lookupProduct(code) {
     found.classList.add('show');
     errorEl.classList.remove('show');
     btn.disabled = false;
+    btnReScan.style.display = '';
     document.getElementById('scanBox').style.display = 'none';
     document.getElementById('scanPlaceholder').style.display = '';
   } else {
     found.classList.remove('show');
     errorEl.classList.add('show');
     btn.disabled = true;
+    btnReScan.style.display = 'none';
     state.product = null;
   }
+}
+
+function resetScan() {
+  if (scanner) { scanner.stop(); scanner = null; }
+  state.product = null;
+  state.scannedCode = null;
+  document.getElementById('productFound').classList.remove('show');
+  document.getElementById('errorProduct').classList.remove('show');
+  document.getElementById('manualCode').value = '';
+  document.getElementById('btnStep1').disabled = true;
+  document.getElementById('btnReScan').style.display = 'none';
+  document.getElementById('scanBox').style.display = '';
+  document.getElementById('scanPlaceholder').style.display = '';
+  document.getElementById('scanBox').classList.remove('scanning');
 }
 
 // ═══════════════════════════════════════════
