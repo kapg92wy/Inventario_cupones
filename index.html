@@ -186,6 +186,43 @@
   .divider { height: 1px; background: var(--border); margin: 16px 0; }
   .inline-error { font-size: 12px; color: var(--danger); margin-top: 4px; display: none; }
   .inline-error.show { display: block; }
+
+  /* ─── RECIBO ─── */
+  .recibo-modal { background: var(--surface); border-radius: var(--radius) var(--radius) 0 0; width: 100%; max-width: 480px; border-top: 1px solid var(--border); animation: slideUp 0.25s ease; max-height: 92dvh; overflow-y: auto; }
+  .recibo-actions { display: flex; gap: 10px; padding: 16px 20px 24px; }
+  .recibo-actions .btn { margin: 0; }
+  /* El ticket en sí tiene fondo blanco para que imprima bien */
+  #reciboTicket {
+    background: #fff; color: #111; padding: 24px 20px;
+    font-family: 'Courier New', monospace; font-size: 13px; line-height: 1.6;
+  }
+  .rec-header { text-align: center; border-bottom: 2px dashed #ccc; padding-bottom: 14px; margin-bottom: 14px; }
+  .rec-logo { display: inline-block; background: #6c63ff; color: #fff; font-weight: 800; font-size: 20px; letter-spacing: 1px; padding: 6px 18px; border-radius: 6px; margin-bottom: 8px; }
+  .rec-title { font-size: 11px; color: #555; text-transform: uppercase; letter-spacing: 1px; }
+  .rec-folio { font-size: 20px; font-weight: 800; color: #111; letter-spacing: 2px; margin: 4px 0; }
+  .rec-datetime { font-size: 11px; color: #777; }
+  .rec-row { display: flex; justify-content: space-between; padding: 5px 0; border-bottom: 1px dotted #ddd; gap: 8px; }
+  .rec-row:last-child { border-bottom: none; }
+  .rec-key { color: #666; font-size: 11px; text-transform: uppercase; letter-spacing: 0.5px; flex-shrink: 0; }
+  .rec-val { font-weight: 700; text-align: right; font-size: 13px; word-break: break-word; }
+  .rec-qty-big { text-align: center; margin: 14px 0; padding: 10px; background: #f5f3ff; border-radius: 8px; border: 2px solid #6c63ff; }
+  .rec-qty-num { font-size: 32px; font-weight: 900; color: #6c63ff; line-height: 1; }
+  .rec-qty-label { font-size: 11px; color: #666; text-transform: uppercase; letter-spacing: 1px; }
+  .rec-sig-section { border-top: 2px dashed #ccc; margin-top: 14px; padding-top: 14px; }
+  .rec-sig-label { font-size: 10px; color: #888; text-transform: uppercase; letter-spacing: 0.8px; margin-bottom: 6px; }
+  #recSigImg { width: 100%; height: 80px; object-fit: contain; background: #f9f9f9; border: 1px solid #ddd; border-radius: 6px; display: block; }
+  .rec-qr-section { text-align: center; border-top: 2px dashed #ccc; margin-top: 14px; padding-top: 14px; }
+  #recQrCanvas { margin: 0 auto 6px; display: block; }
+  .rec-qr-hint { font-size: 10px; color: #999; }
+  .rec-footer { text-align: center; font-size: 10px; color: #aaa; margin-top: 14px; border-top: 1px solid #eee; padding-top: 10px; }
+
+  /* Print: solo el ticket */
+  @media print {
+    body > *:not(#printArea) { display: none !important; }
+    #printArea { display: block !important; position: fixed; inset: 0; }
+    #reciboTicket { padding: 10px; box-shadow: none; }
+    .recibo-actions { display: none; }
+  }
 </style>
 </head>
 <body>
@@ -338,10 +375,13 @@
     <div class="success-circle">✓</div>
     <div class="success-title">¡Entrega registrada!</div>
     <div class="success-sub" id="successMsg">La entrega se guardó correctamente en Google Sheets</div>
-    <button class="btn btn-primary" onclick="resetForm()" style="max-width:240px; margin:0 auto">
+    <button class="btn btn-success" onclick="abrirRecibo()" style="max-width:280px; margin:0 auto">
+      🧾 Ver recibo de entrega
+    </button>
+    <button class="btn btn-primary" onclick="resetForm()" style="max-width:280px; margin:8px auto 0">
       + Nueva entrega
     </button>
-    <button class="btn btn-outline" onclick="showTab('historial')" style="max-width:240px; margin:8px auto 0">
+    <button class="btn btn-outline" onclick="showTab('historial')" style="max-width:280px; margin:8px auto 0">
       Ver historial
     </button>
   </div>
@@ -427,6 +467,63 @@
 
 <!-- ─── TOAST ─── -->
 <div class="toast hide" id="toast"></div>
+
+<!-- ─── PRINT AREA (solo visible al imprimir) ─── -->
+<div id="printArea" style="display:none;"></div>
+
+<!-- ─── MODAL RECIBO ─── -->
+<div class="modal-overlay" id="reciboModal">
+  <div class="recibo-modal">
+    <div id="reciboTicket">
+      <!-- Header -->
+      <div class="rec-header">
+        <div class="rec-logo">GALEX</div>
+        <div class="rec-title">Recibo de Entrega de Cupones</div>
+        <div class="rec-folio" id="recFolio">—</div>
+        <div class="rec-datetime" id="recDatetime">—</div>
+      </div>
+
+      <!-- Cantidad destacada -->
+      <div class="rec-qty-big">
+        <div class="rec-qty-num" id="recQty">—</div>
+        <div class="rec-qty-label">Cupones entregados</div>
+      </div>
+
+      <!-- Datos -->
+      <div class="rec-row"><span class="rec-key">Producto</span><span class="rec-val" id="recProd">—</span></div>
+      <div class="rec-row"><span class="rec-key">Código</span><span class="rec-val" id="recCod">—</span></div>
+      <div class="rec-row"><span class="rec-key">Receptor</span><span class="rec-val" id="recRec">—</span></div>
+      <div class="rec-row"><span class="rec-key">Ruta / Ubicación</span><span class="rec-val" id="recRuta">—</span></div>
+      <div class="rec-row"><span class="rec-key">Operador</span><span class="rec-val" id="recOp">—</span></div>
+      <div id="recNotaRow" class="rec-row" style="display:none"><span class="rec-key">Nota</span><span class="rec-val" id="recNota">—</span></div>
+
+      <!-- Firma -->
+      <div class="rec-sig-section">
+        <div class="rec-sig-label">Firma del receptor</div>
+        <img id="recSigImg" src="" alt="Firma">
+      </div>
+
+      <!-- QR de verificación -->
+      <div class="rec-qr-section">
+        <canvas id="recQrCanvas" width="120" height="120"></canvas>
+        <div class="rec-qr-hint">Escanea para verificar este recibo</div>
+      </div>
+
+      <!-- Footer -->
+      <div class="rec-footer">
+        Galex · Sistema de Entregas<br>
+        Este documento es comprobante válido de entrega
+      </div>
+    </div>
+
+    <!-- Acciones -->
+    <div class="recibo-actions">
+      <button class="btn btn-outline" onclick="imprimirRecibo()" style="flex:1">🖨️ Imprimir</button>
+      <button class="btn btn-primary" onclick="compartirRecibo()" style="flex:1">📤 Compartir</button>
+      <button class="btn btn-outline" onclick="closeModal('reciboModal')" style="width:48px; flex-shrink:0; padding:0">✕</button>
+    </div>
+  </div>
+</div>
 
 <!-- ─── MODAL QR ─── -->
 <div class="modal-overlay" id="qrModal">
@@ -793,9 +890,19 @@ async function confirmarEntrega() {
     return;
   }
 
+  // Si no hay URL configurada, guardar localmente y mostrar recibo igual
   if (!config.sheetUrl) {
-    showToast('⚠ Configura la URL de Google Sheets primero');
-    showTab('config');
+    reciboData = { ...payload };
+    const item = state.inventory.find(p => p.codigo === state.scannedCode);
+    if (item) item.stock -= state.qty;
+    state.history.unshift({ ...payload, id: Date.now() });
+    ['step1','step2','step3'].forEach(s => document.getElementById(s).style.display = 'none');
+    document.getElementById('stepper').style.display = 'none';
+    document.getElementById('successScreen').classList.add('show');
+    document.getElementById('successMsg').textContent =
+      `${state.qty} cupón(es) de "${state.product.nombre}" entregados a ${state.receptor} (local, sin Sheets)`;
+    btn.disabled = false;
+    btn.innerHTML = '✓ Confirmar entrega';
     return;
   }
 
@@ -807,9 +914,11 @@ async function confirmarEntrega() {
   const now = new Date();
   const fecha = now.toLocaleDateString('es-MX');
   const hora = now.toLocaleTimeString('es-MX', { hour: '2-digit', minute: '2-digit' });
+  const folio = generarFolio();
 
   const payload = {
     action: 'registrarEntrega',
+    folio,
     codigo: state.scannedCode,
     producto: state.product.nombre,
     cantidad: state.qty,
@@ -830,6 +939,9 @@ async function confirmarEntrega() {
     const json = await res.json();
 
     if (json.status === 'ok') {
+      // Guardar datos del recibo
+      reciboData = { ...payload };
+
       // Actualizar stock local
       const item = state.inventory.find(p => p.codigo === state.scannedCode);
       if (item) item.stock -= state.qty;
@@ -957,6 +1069,111 @@ function renderHistory(items) {
       </div>
     </div>
   `).join('');
+}
+
+// ═══════════════════════════════════════════
+// RECIBO
+// ═══════════════════════════════════════════
+let reciboData = null;
+
+function generarFolio() {
+  const now = new Date();
+  const d = String(now.getDate()).padStart(2,'0');
+  const m = String(now.getMonth()+1).padStart(2,'0');
+  const y = String(now.getFullYear()).slice(-2);
+  const h = String(now.getHours()).padStart(2,'0');
+  const min = String(now.getMinutes()).padStart(2,'0');
+  const rand = String(Math.floor(Math.random()*9000)+1000);
+  return `GX-${y}${m}${d}-${h}${min}-${rand}`;
+}
+
+function abrirRecibo() {
+  if (!reciboData) return;
+  const d = reciboData;
+
+  document.getElementById('recFolio').textContent = d.folio;
+  document.getElementById('recDatetime').textContent = d.fecha + '  ' + d.hora;
+  document.getElementById('recQty').textContent = d.cantidad;
+  document.getElementById('recProd').textContent = d.producto;
+  document.getElementById('recCod').textContent = d.codigo;
+  document.getElementById('recRec').textContent = d.receptor;
+  document.getElementById('recRuta').textContent = d.ruta;
+  document.getElementById('recOp').textContent = d.operador;
+
+  const notaRow = document.getElementById('recNotaRow');
+  if (d.nota) {
+    document.getElementById('recNota').textContent = d.nota;
+    notaRow.style.display = '';
+  } else {
+    notaRow.style.display = 'none';
+  }
+
+  // Firma
+  document.getElementById('recSigImg').src = d.firma;
+
+  // QR con datos del recibo
+  const qrData = JSON.stringify({
+    folio: d.folio, producto: d.producto, cantidad: d.cantidad,
+    receptor: d.receptor, ruta: d.ruta, operador: d.operador,
+    fecha: d.fecha, hora: d.hora
+  });
+  const canvas = document.getElementById('recQrCanvas');
+  const ctx = canvas.getContext('2d');
+  ctx.clearRect(0,0,120,120);
+  const img = new Image();
+  img.crossOrigin = 'anonymous';
+  img.src = `https://api.qrserver.com/v1/create-qr-code/?size=120x120&data=${encodeURIComponent(qrData)}&color=6c63ff&bgcolor=ffffff`;
+  img.onload = () => ctx.drawImage(img, 0, 0, 120, 120);
+
+  document.getElementById('reciboModal').classList.add('show');
+}
+
+function imprimirRecibo() {
+  const ticket = document.getElementById('reciboTicket');
+  const printArea = document.getElementById('printArea');
+  printArea.innerHTML = ticket.outerHTML;
+  printArea.style.display = 'block';
+  window.print();
+  setTimeout(() => {
+    printArea.style.display = 'none';
+    printArea.innerHTML = '';
+  }, 1000);
+}
+
+async function compartirRecibo() {
+  const d = reciboData;
+  if (!d) return;
+  const texto = [
+    `🧾 RECIBO DE ENTREGA — GALEX`,
+    `Folio: ${d.folio}`,
+    `📅 ${d.fecha} ${d.hora}`,
+    `────────────────────`,
+    `Producto: ${d.producto}`,
+    `Código:   ${d.codigo}`,
+    `Cantidad: ${d.cantidad} cupones`,
+    `────────────────────`,
+    `Receptor: ${d.receptor}`,
+    `Ruta:     ${d.ruta}`,
+    `Operador: ${d.operador}`,
+    d.nota ? `Nota:     ${d.nota}` : null,
+    `────────────────────`,
+    `Galex · Sistema de Entregas`
+  ].filter(Boolean).join('
+');
+
+  if (navigator.share) {
+    try {
+      await navigator.share({ title: `Recibo ${d.folio}`, text: texto });
+      return;
+    } catch {}
+  }
+  // Fallback: copiar al portapapeles
+  try {
+    await navigator.clipboard.writeText(texto);
+    showToast('📋 Recibo copiado al portapapeles');
+  } catch {
+    showToast('⚠ No se pudo compartir');
+  }
 }
 
 // ═══════════════════════════════════════════
