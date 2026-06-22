@@ -93,6 +93,17 @@
   .qty-btn { width: 48px; height: 48px; display: flex; align-items: center; justify-content: center; font-size: 22px; cursor: pointer; color: var(--text2); background: transparent; border: none; transition: all 0.15s; flex-shrink: 0; }
   .qty-btn:active { background: var(--accent); color: white; }
   .qty-display { flex: 1; text-align: center; font-size: 24px; font-weight: 700; color: var(--text); border-left: 1px solid var(--border); border-right: 1px solid var(--border); padding: 8px 0; }
+  /* Cuando el contador es un campo editable */
+  input.qty-display {
+    -webkit-appearance: none; appearance: none;
+    background: transparent; border-top: none; border-bottom: none;
+    border-left: 1px solid var(--border); border-right: 1px solid var(--border);
+    outline: none; font-family: inherit; width: 100%; min-width: 0; height: 48px;
+    -moz-appearance: textfield;
+  }
+  input.qty-display:focus { background: rgba(108,99,255,0.12); }
+  input.qty-display::-webkit-outer-spin-button,
+  input.qty-display::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
 
   /* ─── FIRMA ─── */
   .sig-wrapper { position: relative; border-radius: var(--radius-sm); overflow: hidden; border: 1px solid var(--border); }
@@ -261,8 +272,13 @@
         <label>Cantidad a entregar</label>
         <div class="qty-control">
           <button class="qty-btn" onclick="changeQty(-1)">−</button>
-          <div class="qty-display" id="qtyDisplay">1</div>
+          <input type="text" inputmode="numeric" pattern="[0-9]*" class="qty-display" id="qtyDisplay" value="1"
+                 oninput="onQtyInput()" onblur="normalizeQty()" onfocus="this.select()" aria-label="Cantidad a entregar">
           <button class="qty-btn" onclick="changeQty(1)">+</button>
+        </div>
+        <div style="display:flex; gap:8px; margin-top:8px;">
+          <button class="btn btn-outline" onclick="setQty(state.product ? state.product.stock : 1)" style="margin:0; padding:8px; font-size:13px;">Máximo (<span id="maxQtyHint">—</span>)</button>
+          <button class="btn btn-outline" onclick="setQty(1)" style="margin:0; padding:8px; font-size:13px;">Reiniciar</button>
         </div>
         <div class="inline-error" id="errorQty">Cantidad supera el stock disponible</div>
       </div>
@@ -638,8 +654,8 @@ function goStep1() {
 
 function goStep2() {
   if (!state.product) return;
-  state.qty = 1;
-  document.getElementById('qtyDisplay').textContent = '1';
+  setQty(1);
+  document.getElementById('maxQtyHint').textContent = state.product.stock;
   document.getElementById('pName2').textContent = state.product.nombre;
   document.getElementById('pStock2').textContent = state.product.stock;
   document.getElementById('pCode2').textContent = state.scannedCode;
@@ -650,15 +666,19 @@ function goStep2() {
 }
 
 function goStep3() {
+  normalizeQty();
   state.receptor = document.getElementById('receptor').value.trim();
   state.ruta = document.getElementById('ruta').value.trim();
   state.nota = document.getElementById('nota').value.trim();
-  state.qty = parseInt(document.getElementById('qtyDisplay').textContent);
+  state.qty = getQtyValue();
 
   if (!state.receptor) { showToast('⚠ Ingresa el nombre del receptor'); return; }
   if (!state.ruta) { showToast('⚠ Ingresa la ruta o ubicación'); return; }
+  if (state.qty < 1) { showToast('⚠ La cantidad debe ser al menos 1'); return; }
   if (state.qty > state.product.stock) {
-    document.getElementById('errorQty').classList.add('show'); return;
+    document.getElementById('errorQty').classList.add('show');
+    showToast('⚠ La cantidad supera el stock disponible');
+    return;
   }
   document.getElementById('errorQty').classList.remove('show');
 
@@ -672,16 +692,47 @@ function goStep3() {
   setStep(3);
 }
 
-function changeQty(delta) {
-  const cur = parseInt(document.getElementById('qtyDisplay').textContent);
-  const next = Math.max(1, cur + delta);
-  document.getElementById('qtyDisplay').textContent = next;
-  state.qty = next;
-  if (state.product && next > state.product.stock) {
-    document.getElementById('errorQty').classList.add('show');
+// ─── CANTIDAD (editable + botones) ───
+function getQtyValue() {
+  const raw = document.getElementById('qtyDisplay').value.replace(/[^0-9]/g, '');
+  return raw === '' ? 0 : parseInt(raw, 10);
+}
+
+function setQty(n) {
+  const input = document.getElementById('qtyDisplay');
+  input.value = String(n);
+  state.qty = n;
+  validateQty();
+}
+
+// Se dispara mientras el usuario escribe: solo permite dígitos y valida en vivo
+function onQtyInput() {
+  const input = document.getElementById('qtyDisplay');
+  input.value = input.value.replace(/[^0-9]/g, '');
+  state.qty = getQtyValue();
+  validateQty();
+}
+
+// Al salir del campo: si quedó vacío o en 0, lo regresa a 1
+function normalizeQty() {
+  let n = getQtyValue();
+  if (n < 1) n = 1;
+  setQty(n);
+}
+
+function validateQty() {
+  const err = document.getElementById('errorQty');
+  if (state.product && getQtyValue() > state.product.stock) {
+    err.classList.add('show');
   } else {
-    document.getElementById('errorQty').classList.remove('show');
+    err.classList.remove('show');
   }
+}
+
+function changeQty(delta) {
+  let next = getQtyValue() + delta;
+  if (next < 1) next = 1;
+  setQty(next);
 }
 
 // ═══════════════════════════════════════════
