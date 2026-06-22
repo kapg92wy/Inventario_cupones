@@ -890,22 +890,6 @@ async function confirmarEntrega() {
     return;
   }
 
-  // Si no hay URL configurada, guardar localmente y mostrar recibo igual
-  if (!config.sheetUrl) {
-    reciboData = { ...payload };
-    const item = state.inventory.find(p => p.codigo === state.scannedCode);
-    if (item) item.stock -= state.qty;
-    state.history.unshift({ ...payload, id: Date.now() });
-    ['step1','step2','step3'].forEach(s => document.getElementById(s).style.display = 'none');
-    document.getElementById('stepper').style.display = 'none';
-    document.getElementById('successScreen').classList.add('show');
-    document.getElementById('successMsg').textContent =
-      `${state.qty} cupón(es) de "${state.product.nombre}" entregados a ${state.receptor} (local, sin Sheets)`;
-    btn.disabled = false;
-    btn.innerHTML = '✓ Confirmar entrega';
-    return;
-  }
-
   const btn = document.getElementById('btnConfirm');
   btn.disabled = true;
   btn.innerHTML = '<div class="loader"></div> Guardando...';
@@ -930,6 +914,22 @@ async function confirmarEntrega() {
     hora,
     firma: sigData
   };
+
+  // Si no hay URL configurada, guardar localmente y mostrar recibo igual
+  if (!config.sheetUrl) {
+    reciboData = { ...payload };
+    const item = state.inventory.find(p => p.codigo === state.scannedCode);
+    if (item) item.stock -= state.qty;
+    state.history.unshift({ ...payload, id: Date.now() });
+    ['step1','step2','step3'].forEach(s => document.getElementById(s).style.display = 'none');
+    document.getElementById('stepper').style.display = 'none';
+    document.getElementById('successScreen').classList.add('show');
+    document.getElementById('successMsg').textContent =
+      `${state.qty} cupón(es) de "${state.product.nombre}" entregados a ${state.receptor} (guardado localmente)`;
+    btn.disabled = false;
+    btn.innerHTML = '✓ Confirmar entrega';
+    return;
+  }
 
   try {
     const res = await fetch(config.sheetUrl, {
@@ -1143,29 +1143,29 @@ function imprimirRecibo() {
 async function compartirRecibo() {
   const d = reciboData;
   if (!d) return;
-  const texto = [
-    `🧾 RECIBO DE ENTREGA — GALEX`,
-    `Folio: ${d.folio}`,
-    `📅 ${d.fecha} ${d.hora}`,
-    `────────────────────`,
-    `Producto: ${d.producto}`,
-    `Código:   ${d.codigo}`,
-    `Cantidad: ${d.cantidad} cupones`,
-    `────────────────────`,
-    `Receptor: ${d.receptor}`,
-    `Ruta:     ${d.ruta}`,
-    `Operador: ${d.operador}`,
-    d.nota ? `Nota:     ${d.nota}` : null,
-    `────────────────────`,
-    `Galex · Sistema de Entregas`
-  ].filter(Boolean).join('
-');
+  const lineas = [
+    '🧾 RECIBO DE ENTREGA — GALEX',
+    'Folio: ' + d.folio,
+    '📅 ' + d.fecha + ' ' + d.hora,
+    '────────────────────',
+    'Producto: ' + d.producto,
+    'Código:   ' + d.codigo,
+    'Cantidad: ' + d.cantidad + ' cupones',
+    '────────────────────',
+    'Receptor: ' + d.receptor,
+    'Ruta:     ' + d.ruta,
+    'Operador: ' + d.operador,
+  ];
+  if (d.nota) lineas.push('Nota:     ' + d.nota);
+  lineas.push('────────────────────');
+  lineas.push('Galex · Sistema de Entregas');
+  const texto = lineas.join('\n');
 
   if (navigator.share) {
     try {
-      await navigator.share({ title: `Recibo ${d.folio}`, text: texto });
+      await navigator.share({ title: 'Recibo ' + d.folio, text: texto });
       return;
-    } catch {}
+    } catch(e) {}
   }
   // Fallback: copiar al portapapeles
   try {
