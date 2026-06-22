@@ -10,47 +10,36 @@
 <title>Galex · Entregas</title>
 <link rel="manifest" href="manifest.json">
 <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 <style>
   :root {
-    --bg: #0f0f1a;
-    --surface: #1a1a2e;
-    --surface2: #22223a;
-    --accent: #6c63ff;
-    --accent2: #a78bfa;
-    --success: #22c55e;
-    --danger: #ef4444;
-    --text: #f1f0ff;
-    --text2: #a09fbd;
-    --border: rgba(108,99,255,0.25);
-    --radius: 14px;
-    --radius-sm: 8px;
+    --bg: #0f0f1a; --surface: #1a1a2e; --surface2: #22223a;
+    --accent: #6c63ff; --accent2: #a78bfa; --success: #22c55e;
+    --danger: #ef4444; --text: #f1f0ff; --text2: #a09fbd;
+    --border: rgba(108,99,255,0.25); --radius: 14px; --radius-sm: 8px;
   }
   * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
   body { font-family: -apple-system, 'SF Pro Display', 'Segoe UI', sans-serif; background: var(--bg); color: var(--text); min-height: 100dvh; overflow-x: hidden; }
 
-  /* ─── NAV ─── */
   .nav { background: var(--surface); border-bottom: 1px solid var(--border); padding: 14px 20px; display: flex; align-items: center; gap: 12px; position: sticky; top: 0; z-index: 100; }
-  .nav-logo { width: 32px; height: 32px; background: var(--accent); border-radius: 8px; display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 14px; letter-spacing: -0.5px; }
+  .nav-logo { width: 32px; height: 32px; background: var(--accent); border-radius: 8px; display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 14px; }
   .nav-title { font-size: 16px; font-weight: 600; }
   .nav-sub { font-size: 12px; color: var(--text2); }
   .nav-right { margin-left: auto; display: flex; gap: 8px; }
   .icon-btn { width: 36px; height: 36px; border-radius: 10px; background: var(--surface2); border: 1px solid var(--border); display: flex; align-items: center; justify-content: center; cursor: pointer; color: var(--text2); font-size: 18px; transition: all 0.15s; }
   .icon-btn:hover { background: var(--accent); color: white; border-color: var(--accent); }
 
-  /* ─── TABS ─── */
   .tabs { display: flex; background: var(--surface); border-bottom: 1px solid var(--border); }
   .tab { flex: 1; padding: 12px 8px; text-align: center; font-size: 13px; font-weight: 500; color: var(--text2); cursor: pointer; border-bottom: 2px solid transparent; transition: all 0.2s; }
   .tab.active { color: var(--accent2); border-bottom-color: var(--accent); }
 
-  /* ─── PAGES ─── */
   .page { display: none; padding: 20px; max-width: 480px; margin: 0 auto; }
   .page.active { display: block; }
 
-  /* ─── CARDS ─── */
   .card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 18px; margin-bottom: 16px; }
   .card-title { font-size: 13px; font-weight: 600; color: var(--text2); text-transform: uppercase; letter-spacing: 0.8px; margin-bottom: 14px; display: flex; align-items: center; gap: 8px; }
 
-  /* ─── STEPPER ─── */
   .stepper { display: flex; align-items: center; gap: 6px; margin-bottom: 24px; }
   .step-dot { width: 28px; height: 28px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: 700; flex-shrink: 0; transition: all 0.3s; }
   .step-dot.done { background: var(--success); color: white; }
@@ -60,7 +49,6 @@
   .step-line.done { background: var(--success); }
   .step-line.pending { background: var(--surface2); }
 
-  /* ─── SCAN AREA ─── */
   .scan-box { border: 2px dashed var(--border); border-radius: var(--radius); overflow: hidden; position: relative; min-height: 220px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 12px; cursor: pointer; transition: all 0.2s; background: var(--surface2); }
   .scan-box:hover { border-color: var(--accent); }
   .scan-box.scanning { border-color: var(--accent); border-style: solid; }
@@ -70,64 +58,45 @@
   .scan-icon { font-size: 48px; margin-bottom: 8px; opacity: 0.5; }
   .scan-hint { font-size: 13px; color: var(--text2); }
 
-  /* ─── PRODUCTO DETECTADO ─── */
   .product-found { background: rgba(108,99,255,0.1); border: 1px solid var(--accent); border-radius: var(--radius-sm); padding: 14px; display: none; }
   .product-found.show { display: block; }
   .product-name { font-size: 16px; font-weight: 600; margin-bottom: 4px; }
   .product-stock { font-size: 13px; color: var(--text2); }
   .product-stock span { color: var(--accent2); font-weight: 600; }
 
-  /* ─── INPUTS ─── */
   .field { margin-bottom: 14px; }
   .field label { display: block; font-size: 12px; font-weight: 600; color: var(--text2); margin-bottom: 6px; text-transform: uppercase; letter-spacing: 0.6px; }
-  .field input, .field select, .field textarea {
-    width: 100%; background: var(--surface2); border: 1px solid var(--border);
-    border-radius: var(--radius-sm); padding: 11px 14px; color: var(--text);
-    font-size: 15px; font-family: inherit; outline: none; transition: border-color 0.2s;
-  }
+  .field input, .field select, .field textarea { width: 100%; background: var(--surface2); border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 11px 14px; color: var(--text); font-size: 15px; font-family: inherit; outline: none; transition: border-color 0.2s; }
   .field input:focus, .field select:focus, .field textarea:focus { border-color: var(--accent); }
   .field select option { background: var(--surface2); }
 
-  /* ─── QTY ─── */
-  .qty-control { display: flex; align-items: center; gap: 0; background: var(--surface2); border: 1px solid var(--border); border-radius: var(--radius-sm); overflow: hidden; }
+  .qty-control { display: flex; align-items: center; background: var(--surface2); border: 1px solid var(--border); border-radius: var(--radius-sm); overflow: hidden; }
   .qty-btn { width: 48px; height: 48px; display: flex; align-items: center; justify-content: center; font-size: 22px; cursor: pointer; color: var(--text2); background: transparent; border: none; transition: all 0.15s; flex-shrink: 0; }
   .qty-btn:active { background: var(--accent); color: white; }
   .qty-display { flex: 1; text-align: center; font-size: 24px; font-weight: 700; color: var(--text); border-left: 1px solid var(--border); border-right: 1px solid var(--border); padding: 8px 0; }
-  /* Cuando el contador es un campo editable */
-  input.qty-display {
-    -webkit-appearance: none; appearance: none;
-    background: transparent; border-top: none; border-bottom: none;
-    border-left: 1px solid var(--border); border-right: 1px solid var(--border);
-    outline: none; font-family: inherit; width: 100%; min-width: 0; height: 48px;
-    -moz-appearance: textfield;
-  }
+  input.qty-display { -webkit-appearance: none; appearance: none; background: transparent; border-top: none; border-bottom: none; border-left: 1px solid var(--border); border-right: 1px solid var(--border); outline: none; font-family: inherit; width: 100%; min-width: 0; height: 48px; -moz-appearance: textfield; }
   input.qty-display:focus { background: rgba(108,99,255,0.12); }
-  input.qty-display::-webkit-outer-spin-button,
-  input.qty-display::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
+  input.qty-display::-webkit-outer-spin-button, input.qty-display::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
 
-  /* ─── FIRMA ─── */
   .sig-wrapper { position: relative; border-radius: var(--radius-sm); overflow: hidden; border: 1px solid var(--border); }
   #sigCanvas { display: block; width: 100%; height: 160px; background: var(--surface2); cursor: crosshair; touch-action: none; }
   .sig-clear { position: absolute; top: 8px; right: 8px; background: rgba(239,68,68,0.15); border: 1px solid rgba(239,68,68,0.3); color: #ef4444; border-radius: 6px; padding: 4px 10px; font-size: 12px; cursor: pointer; }
   .sig-hint { font-size: 11px; color: var(--text2); text-align: center; margin-top: 6px; }
 
-  /* ─── BUTTONS ─── */
   .btn { display: flex; align-items: center; justify-content: center; gap: 8px; width: 100%; padding: 14px; border-radius: var(--radius-sm); font-size: 15px; font-weight: 600; cursor: pointer; border: none; transition: all 0.2s; margin-top: 8px; }
   .btn-primary { background: var(--accent); color: white; }
   .btn-primary:hover { background: #5b52ee; }
   .btn-primary:active { transform: scale(0.98); }
   .btn-outline { background: transparent; color: var(--text2); border: 1px solid var(--border); }
   .btn-success { background: var(--success); color: white; }
+  .btn-danger { background: var(--danger); color: white; }
   .btn:disabled { opacity: 0.4; cursor: not-allowed; }
 
-  /* ─── RESUMEN CONFIRMACIÓN ─── */
   .summary-row { display: flex; justify-content: space-between; align-items: center; padding: 10px 0; border-bottom: 1px solid var(--border); font-size: 14px; }
   .summary-row:last-child { border-bottom: none; }
   .summary-key { color: var(--text2); }
   .summary-val { font-weight: 600; text-align: right; }
-  .summary-sig-preview { width: 100%; height: 80px; border-radius: 8px; object-fit: contain; background: var(--surface2); margin-top: 8px; }
 
-  /* ─── SUCCESS ─── */
   .success-screen { display: none; text-align: center; padding: 40px 20px; }
   .success-screen.show { display: block; }
   .success-circle { width: 80px; height: 80px; background: rgba(34,197,94,0.15); border: 2px solid var(--success); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 36px; margin: 0 auto 20px; }
@@ -135,14 +104,20 @@
   .success-sub { color: var(--text2); font-size: 14px; margin-bottom: 24px; }
 
   /* ─── HISTORIAL ─── */
-  .entry-card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 14px; margin-bottom: 10px; cursor: pointer; transition: border-color 0.2s; }
+  .entry-card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 14px; margin-bottom: 10px; transition: border-color 0.2s; }
   .entry-card:hover { border-color: var(--accent); }
   .entry-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 6px; }
   .entry-product { font-size: 15px; font-weight: 600; }
   .entry-qty { background: rgba(108,99,255,0.2); color: var(--accent2); border-radius: 6px; padding: 2px 10px; font-size: 13px; font-weight: 700; }
-  .entry-meta { font-size: 12px; color: var(--text2); display: flex; gap: 12px; flex-wrap: wrap; }
+  .entry-meta { font-size: 12px; color: var(--text2); display: flex; gap: 12px; flex-wrap: wrap; margin-bottom: 8px; }
+  .entry-actions { display: flex; gap: 8px; margin-top: 8px; }
+  .entry-btn { flex: 1; padding: 7px 10px; border-radius: 8px; font-size: 12px; font-weight: 600; cursor: pointer; border: 1px solid var(--border); background: var(--surface2); color: var(--text2); text-align: center; transition: all 0.15s; }
+  .entry-btn:hover { border-color: var(--accent); color: var(--accent2); }
+  .entry-btn.pdf { background: rgba(108,99,255,0.15); border-color: var(--accent); color: var(--accent2); }
+  .entry-btn.no-pdf { opacity: 0.4; cursor: default; }
   .badge { display: inline-flex; align-items: center; gap: 4px; font-size: 11px; padding: 2px 8px; border-radius: 4px; font-weight: 600; }
   .badge-op { background: rgba(167,139,250,0.15); color: var(--accent2); }
+  .badge-folio { background: rgba(34,197,94,0.1); color: var(--success); font-family: monospace; }
 
   /* ─── INVENTARIO ─── */
   .inv-row { display: flex; align-items: center; padding: 12px 0; border-bottom: 1px solid var(--border); gap: 12px; }
@@ -158,7 +133,6 @@
   .config-section { margin-bottom: 24px; }
   .config-label { font-size: 13px; font-weight: 600; color: var(--text2); text-transform: uppercase; letter-spacing: 0.8px; margin-bottom: 12px; }
   .config-info { font-size: 12px; color: var(--text2); background: var(--surface2); border-radius: var(--radius-sm); padding: 12px; margin-top: 8px; line-height: 1.6; }
-  .config-info a { color: var(--accent2); }
   .op-chip { display: inline-flex; align-items: center; gap: 6px; background: var(--surface2); border: 1px solid var(--border); border-radius: 20px; padding: 6px 12px; font-size: 13px; margin: 4px; }
   .op-remove { cursor: pointer; color: var(--danger); font-size: 16px; line-height: 1; }
 
@@ -174,10 +148,8 @@
   .toast { position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%); background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 12px 20px; font-size: 14px; z-index: 300; white-space: nowrap; transition: opacity 0.3s; box-shadow: 0 8px 32px rgba(0,0,0,0.4); }
   .toast.hide { opacity: 0; pointer-events: none; }
 
-  /* ─── QR MODAL ─── */
   #qrCanvas { display: block; margin: 0 auto; }
 
-  /* ─── LOADER ─── */
   .loader { display: inline-block; width: 18px; height: 18px; border: 2px solid rgba(255,255,255,0.3); border-top-color: white; border-radius: 50%; animation: spin 0.7s linear infinite; }
   @keyframes spin { to { transform: rotate(360deg); } }
 
@@ -187,27 +159,23 @@
   .inline-error { font-size: 12px; color: var(--danger); margin-top: 4px; display: none; }
   .inline-error.show { display: block; }
 
-  /* ─── RECIBO ─── */
+  /* ─── RECIBO (ticket blanco para PDF) ─── */
   .recibo-modal { background: var(--surface); border-radius: var(--radius) var(--radius) 0 0; width: 100%; max-width: 480px; border-top: 1px solid var(--border); animation: slideUp 0.25s ease; max-height: 92dvh; overflow-y: auto; }
-  .recibo-actions { display: flex; gap: 10px; padding: 16px 20px 24px; }
+  .recibo-actions { display: flex; gap: 8px; padding: 12px 16px 24px; }
   .recibo-actions .btn { margin: 0; }
-  /* El ticket en sí tiene fondo blanco para que imprima bien */
-  #reciboTicket {
-    background: #fff; color: #111; padding: 24px 20px;
-    font-family: 'Courier New', monospace; font-size: 13px; line-height: 1.6;
-  }
+  #reciboTicket { background: #fff; color: #111; padding: 24px 20px; font-family: 'Courier New', monospace; font-size: 13px; line-height: 1.6; }
   .rec-header { text-align: center; border-bottom: 2px dashed #ccc; padding-bottom: 14px; margin-bottom: 14px; }
   .rec-logo { display: inline-block; background: #6c63ff; color: #fff; font-weight: 800; font-size: 20px; letter-spacing: 1px; padding: 6px 18px; border-radius: 6px; margin-bottom: 8px; }
   .rec-title { font-size: 11px; color: #555; text-transform: uppercase; letter-spacing: 1px; }
-  .rec-folio { font-size: 20px; font-weight: 800; color: #111; letter-spacing: 2px; margin: 4px 0; }
+  .rec-folio { font-size: 18px; font-weight: 800; color: #111; letter-spacing: 1px; margin: 4px 0; }
   .rec-datetime { font-size: 11px; color: #777; }
+  .rec-qty-big { text-align: center; margin: 14px 0; padding: 10px; background: #f5f3ff; border-radius: 8px; border: 2px solid #6c63ff; }
+  .rec-qty-num { font-size: 36px; font-weight: 900; color: #6c63ff; line-height: 1; }
+  .rec-qty-label { font-size: 11px; color: #666; text-transform: uppercase; letter-spacing: 1px; }
   .rec-row { display: flex; justify-content: space-between; padding: 5px 0; border-bottom: 1px dotted #ddd; gap: 8px; }
   .rec-row:last-child { border-bottom: none; }
   .rec-key { color: #666; font-size: 11px; text-transform: uppercase; letter-spacing: 0.5px; flex-shrink: 0; }
   .rec-val { font-weight: 700; text-align: right; font-size: 13px; word-break: break-word; }
-  .rec-qty-big { text-align: center; margin: 14px 0; padding: 10px; background: #f5f3ff; border-radius: 8px; border: 2px solid #6c63ff; }
-  .rec-qty-num { font-size: 32px; font-weight: 900; color: #6c63ff; line-height: 1; }
-  .rec-qty-label { font-size: 11px; color: #666; text-transform: uppercase; letter-spacing: 1px; }
   .rec-sig-section { border-top: 2px dashed #ccc; margin-top: 14px; padding-top: 14px; }
   .rec-sig-label { font-size: 10px; color: #888; text-transform: uppercase; letter-spacing: 0.8px; margin-bottom: 6px; }
   #recSigImg { width: 100%; height: 80px; object-fit: contain; background: #f9f9f9; border: 1px solid #ddd; border-radius: 6px; display: block; }
@@ -216,13 +184,10 @@
   .rec-qr-hint { font-size: 10px; color: #999; }
   .rec-footer { text-align: center; font-size: 10px; color: #aaa; margin-top: 14px; border-top: 1px solid #eee; padding-top: 10px; }
 
-  /* Print: solo el ticket */
-  @media print {
-    body > *:not(#printArea) { display: none !important; }
-    #printArea { display: block !important; position: fixed; inset: 0; }
-    #reciboTicket { padding: 10px; box-shadow: none; }
-    .recibo-actions { display: none; }
-  }
+  /* Overlay de generando PDF */
+  .pdf-generating { position: fixed; inset: 0; background: rgba(0,0,0,0.8); z-index: 400; display: none; flex-direction: column; align-items: center; justify-content: center; gap: 16px; color: white; font-size: 15px; }
+  .pdf-generating.show { display: flex; }
+  .pdf-spinner { width: 40px; height: 40px; border: 3px solid rgba(255,255,255,0.2); border-top-color: var(--accent2); border-radius: 50%; animation: spin 0.8s linear infinite; }
 </style>
 </head>
 <body>
@@ -239,17 +204,14 @@
 </div>
 
 <div class="tabs">
-  <div class="tab active" onclick="showTab('nueva')" id="tab-nueva">📦 Nueva entrega</div>
+  <div class="tab active" onclick="showTab('nueva')" id="tab-nueva">📦 Nueva</div>
   <div class="tab" onclick="showTab('historial')" id="tab-historial">📋 Historial</div>
   <div class="tab" onclick="showTab('inventario')" id="tab-inventario">📊 Inventario</div>
 </div>
 
-<!-- ═══════════════════════════════════════════
-     PÁGINA 1 — NUEVA ENTREGA
-════════════════════════════════════════════ -->
+<!-- ═══ NUEVA ENTREGA ═══ -->
 <div class="page active" id="page-nueva">
 
-  <!-- STEPPER -->
   <div class="stepper" id="stepper">
     <div class="step-dot active" id="sd1">1</div>
     <div class="step-line pending" id="sl1"></div>
@@ -258,93 +220,81 @@
     <div class="step-dot pending" id="sd3">3</div>
   </div>
 
-  <!-- STEP 1: SCAN -->
+  <!-- STEP 1 -->
   <div id="step1">
     <div class="card">
       <div class="card-title">📷 Escanear cupón</div>
-
       <div class="scan-box" id="scanBox" onclick="startScanner()">
         <div id="reader"></div>
         <div class="scan-placeholder" id="scanPlaceholder">
           <div class="scan-icon">⬛</div>
-          <div style="font-size:15px; font-weight:600; margin-bottom:6px;">Toca para escanear</div>
+          <div style="font-size:15px;font-weight:600;margin-bottom:6px">Toca para escanear</div>
           <div class="scan-hint">Apunta la cámara al código QR del cupón</div>
         </div>
       </div>
-
-      <div style="margin: 12px 0; text-align:center; color:var(--text2); font-size:13px;">— o —</div>
-
+      <div style="margin:12px 0;text-align:center;color:var(--text2);font-size:13px">— o —</div>
       <div class="field">
         <label>Código manual</label>
         <input type="text" id="manualCode" placeholder="Ej: CUP-001" oninput="manualLookup(this.value)">
       </div>
-
       <div class="product-found" id="productFound">
-        <div style="display:flex; justify-content:space-between; align-items:flex-start;">
+        <div style="display:flex;justify-content:space-between;align-items:flex-start">
           <div>
             <div class="product-name" id="pName">—</div>
             <div class="product-stock">Stock actual: <span id="pStock">—</span> unidades</div>
           </div>
-          <button onclick="resetScan()" style="background:transparent; border:none; color:var(--text2); font-size:20px; cursor:pointer; padding:0 0 0 8px; line-height:1;" title="Volver a escanear">✕</button>
+          <button onclick="resetScan()" style="background:transparent;border:none;color:var(--text2);font-size:20px;cursor:pointer;padding:0 0 0 8px;line-height:1">✕</button>
         </div>
       </div>
       <div class="inline-error" id="errorProduct">Código no encontrado en inventario</div>
     </div>
-
     <button class="btn btn-primary" id="btnStep1" onclick="goStep2()" disabled>Continuar →</button>
-    <button class="btn btn-outline" id="btnReScan" onclick="resetScan()" style="display:none; margin-top:6px;">↩ Volver a escanear</button>
+    <button class="btn btn-outline" id="btnReScan" onclick="resetScan()" style="display:none;margin-top:6px">↩ Volver a escanear</button>
   </div>
 
-  <!-- STEP 2: DETALLE -->
+  <!-- STEP 2 -->
   <div id="step2" style="display:none">
     <div class="card">
       <div class="card-title">📋 Detalle de entrega</div>
-
       <div class="product-found show" id="pFoundStep2" style="margin-bottom:14px">
         <div class="product-name" id="pName2">—</div>
         <div class="product-stock">Stock: <span id="pStock2">—</span> | Código: <span id="pCode2" style="color:var(--accent2)">—</span></div>
       </div>
-
       <div class="field">
         <label>Cantidad a entregar</label>
         <div class="qty-control">
           <button class="qty-btn" onclick="changeQty(-1)">−</button>
           <input type="text" inputmode="numeric" pattern="[0-9]*" class="qty-display" id="qtyDisplay" value="1"
-                 oninput="onQtyInput()" onblur="normalizeQty()" onfocus="this.select()" aria-label="Cantidad a entregar">
+                 oninput="onQtyInput()" onblur="normalizeQty()" onfocus="this.select()" aria-label="Cantidad">
           <button class="qty-btn" onclick="changeQty(1)">+</button>
         </div>
-        <div style="display:flex; gap:8px; margin-top:8px;">
-          <button class="btn btn-outline" onclick="setQty(state.product ? state.product.stock : 1)" style="margin:0; padding:8px; font-size:13px;">Máximo (<span id="maxQtyHint">—</span>)</button>
-          <button class="btn btn-outline" onclick="setQty(1)" style="margin:0; padding:8px; font-size:13px;">Reiniciar</button>
+        <div style="display:flex;gap:8px;margin-top:8px">
+          <button class="btn btn-outline" onclick="setQty(state.product ? state.product.stock : 1)" style="margin:0;padding:8px;font-size:13px">Máximo (<span id="maxQtyHint">—</span>)</button>
+          <button class="btn btn-outline" onclick="setQty(1)" style="margin:0;padding:8px;font-size:13px">Reiniciar</button>
         </div>
         <div class="inline-error" id="errorQty">Cantidad supera el stock disponible</div>
       </div>
-
       <div class="field">
         <label>Entregar a</label>
         <input type="text" id="receptor" placeholder="Nombre del receptor">
       </div>
-
       <div class="field">
         <label>Ruta / Ubicación</label>
         <input type="text" id="ruta" placeholder="Ej: Ruta 3 – Plaza Galerías">
       </div>
-
       <div class="field">
         <label>Nota (opcional)</label>
         <input type="text" id="nota" placeholder="Ej: Máquina 12, piso 2">
       </div>
     </div>
-
     <button class="btn btn-primary" onclick="goStep3()">Continuar a firma →</button>
     <button class="btn btn-outline" onclick="goStep1()" style="margin-top:6px">← Volver</button>
   </div>
 
-  <!-- STEP 3: FIRMA -->
+  <!-- STEP 3 -->
   <div id="step3" style="display:none">
     <div class="card">
       <div class="card-title">✍️ Firma de conformidad</div>
-
       <div style="margin-bottom:14px">
         <div class="summary-row"><span class="summary-key">Cupón</span><span class="summary-val" id="sumProd">—</span></div>
         <div class="summary-row"><span class="summary-key">Cantidad</span><span class="summary-val" id="sumQty">—</span></div>
@@ -352,10 +302,8 @@
         <div class="summary-row"><span class="summary-key">Ruta</span><span class="summary-val" id="sumRuta">—</span></div>
         <div class="summary-row"><span class="summary-key">Operador</span><span class="summary-val" id="sumOp">—</span></div>
       </div>
-
       <div class="divider"></div>
-
-      <div style="font-size:12px; font-weight:600; color:var(--text2); text-transform:uppercase; letter-spacing:0.6px; margin-bottom:8px;">Firma del receptor</div>
+      <div style="font-size:12px;font-weight:600;color:var(--text2);text-transform:uppercase;letter-spacing:0.6px;margin-bottom:8px">Firma del receptor</div>
       <div class="sig-wrapper">
         <canvas id="sigCanvas" width="600" height="200"></canvas>
         <button class="sig-clear" onclick="clearSig()">✕ Borrar</button>
@@ -363,10 +311,7 @@
       <div class="sig-hint">Firma con el dedo en el recuadro</div>
       <div class="inline-error" id="errorSig">Se requiere firma para continuar</div>
     </div>
-
-    <button class="btn btn-success" id="btnConfirm" onclick="confirmarEntrega()">
-      ✓ Confirmar entrega
-    </button>
+    <button class="btn btn-success" id="btnConfirm" onclick="confirmarEntrega()">✓ Confirmar entrega</button>
     <button class="btn btn-outline" onclick="goStep2()" style="margin-top:6px">← Volver</button>
   </div>
 
@@ -374,48 +319,34 @@
   <div class="success-screen" id="successScreen">
     <div class="success-circle">✓</div>
     <div class="success-title">¡Entrega registrada!</div>
-    <div class="success-sub" id="successMsg">La entrega se guardó correctamente en Google Sheets</div>
-    <button class="btn btn-success" onclick="abrirRecibo()" style="max-width:280px; margin:0 auto">
-      🧾 Ver recibo de entrega
-    </button>
-    <button class="btn btn-primary" onclick="resetForm()" style="max-width:280px; margin:8px auto 0">
-      + Nueva entrega
-    </button>
-    <button class="btn btn-outline" onclick="showTab('historial')" style="max-width:280px; margin:8px auto 0">
-      Ver historial
-    </button>
+    <div class="success-sub" id="successMsg"></div>
+    <button class="btn btn-success" onclick="abrirRecibo()" style="max-width:280px;margin:0 auto">🧾 Ver y descargar recibo</button>
+    <button class="btn btn-primary" onclick="resetForm()" style="max-width:280px;margin:8px auto 0">+ Nueva entrega</button>
+    <button class="btn btn-outline" onclick="showTab('historial')" style="max-width:280px;margin:8px auto 0">Ver historial</button>
   </div>
-
 </div>
 
-<!-- ═══════════════════════════════════════════
-     PÁGINA 2 — HISTORIAL
-════════════════════════════════════════════ -->
+<!-- ═══ HISTORIAL ═══ -->
 <div class="page" id="page-historial">
-  <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:16px;">
-    <div style="font-size:18px; font-weight:700;">Historial</div>
-    <button class="btn btn-outline" onclick="loadHistory()" style="width:auto; padding:8px 14px; margin:0; font-size:13px;">🔄 Actualizar</button>
+  <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
+    <div style="font-size:18px;font-weight:700">Historial</div>
+    <button class="btn btn-outline" onclick="loadHistory()" style="width:auto;padding:8px 14px;margin:0;font-size:13px">🔄 Actualizar</button>
   </div>
   <div id="historialList"><div class="empty-state"><div class="empty-icon">📋</div>Cargando historial...</div></div>
 </div>
 
-<!-- ═══════════════════════════════════════════
-     PÁGINA 3 — INVENTARIO
-════════════════════════════════════════════ -->
+<!-- ═══ INVENTARIO ═══ -->
 <div class="page" id="page-inventario">
-  <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:16px;">
-    <div style="font-size:18px; font-weight:700;">Inventario</div>
-    <button class="btn btn-outline" onclick="loadInventory()" style="width:auto; padding:8px 14px; margin:0; font-size:13px;">🔄 Actualizar</button>
+  <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
+    <div style="font-size:18px;font-weight:700">Inventario</div>
+    <button class="btn btn-outline" onclick="loadInventory()" style="width:auto;padding:8px 14px;margin:0;font-size:13px">🔄 Actualizar</button>
   </div>
   <div id="inventarioList"><div class="empty-state"><div class="empty-icon">📊</div>Cargando inventario...</div></div>
 </div>
 
-<!-- ═══════════════════════════════════════════
-     PÁGINA 4 — CONFIG
-════════════════════════════════════════════ -->
+<!-- ═══ CONFIG ═══ -->
 <div class="page" id="page-config">
-  <div style="font-size:18px; font-weight:700; margin-bottom:20px;">Configuración</div>
-
+  <div style="font-size:18px;font-weight:700;margin-bottom:20px">Configuración</div>
   <div class="config-section">
     <div class="config-label">Google Sheets</div>
     <div class="field">
@@ -430,9 +361,7 @@
       4. Copia la URL y pégala aquí ↑
     </div>
   </div>
-
   <div class="divider"></div>
-
   <div class="config-section">
     <div class="config-label">Operador actual</div>
     <div class="field">
@@ -440,27 +369,22 @@
       <input type="text" id="operatorName" placeholder="Ej: Kevin" oninput="updateOperator(this.value)">
     </div>
   </div>
-
   <div class="divider"></div>
-
   <div class="config-section">
     <div class="config-label">Operadores del equipo</div>
     <div id="opList"></div>
-    <div style="display:flex; gap:8px; margin-top:8px;">
-      <input type="text" id="newOpInput" placeholder="Nombre del operador" style="flex:1; background:var(--surface2); border:1px solid var(--border); border-radius:var(--radius-sm); padding:10px 14px; color:var(--text); font-size:14px; outline:none;">
-      <button class="btn btn-primary" onclick="addOperator()" style="width:auto; padding:10px 16px; margin:0; font-size:14px;">+</button>
+    <div style="display:flex;gap:8px;margin-top:8px">
+      <input type="text" id="newOpInput" placeholder="Nombre del operador" style="flex:1;background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius-sm);padding:10px 14px;color:var(--text);font-size:14px;outline:none">
+      <button class="btn btn-primary" onclick="addOperator()" style="width:auto;padding:10px 16px;margin:0;font-size:14px">+</button>
     </div>
   </div>
-
   <div class="divider"></div>
-
   <div class="config-section">
-    <div class="config-label">¿Cómo generar los QR?</div>
+    <div class="config-label">Google Apps Script — código GAS</div>
     <div class="config-info">
-      En Google Sheets, usa la fórmula:<br><br>
-      <code style="color:var(--accent2);">=IMAGE("https://api.qrserver.com/v1/create-qr-code/?size=150x150&data="&A2)</code><br><br>
-      Donde <strong>A2</strong> es la celda con el código del cupón (ej: CUP-001).
-      Imprime la columna de QR como etiquetas.
+      Agrega la acción <strong>guardarPdfDrive</strong> a tu script para guardar PDFs en Drive.<br>
+      El script debe aceptar: <code>{ action:'guardarPdfDrive', folio, pdfBase64, nombre }</code><br>
+      y devolver: <code>{ status:'ok', driveUrl: '...' }</code>
     </div>
   </div>
 </div>
@@ -468,59 +392,46 @@
 <!-- ─── TOAST ─── -->
 <div class="toast hide" id="toast"></div>
 
-<!-- ─── PRINT AREA (solo visible al imprimir) ─── -->
-<div id="printArea" style="display:none;"></div>
+<!-- ─── PDF GENERANDO ─── -->
+<div class="pdf-generating" id="pdfGenerating">
+  <div class="pdf-spinner"></div>
+  <div id="pdfGenMsg">Generando PDF...</div>
+</div>
 
 <!-- ─── MODAL RECIBO ─── -->
 <div class="modal-overlay" id="reciboModal">
   <div class="recibo-modal">
     <div id="reciboTicket">
-      <!-- Header -->
       <div class="rec-header">
         <div class="rec-logo">GALEX</div>
         <div class="rec-title">Recibo de Entrega de Cupones</div>
         <div class="rec-folio" id="recFolio">—</div>
         <div class="rec-datetime" id="recDatetime">—</div>
       </div>
-
-      <!-- Cantidad destacada -->
       <div class="rec-qty-big">
         <div class="rec-qty-num" id="recQty">—</div>
         <div class="rec-qty-label">Cupones entregados</div>
       </div>
-
-      <!-- Datos -->
       <div class="rec-row"><span class="rec-key">Producto</span><span class="rec-val" id="recProd">—</span></div>
       <div class="rec-row"><span class="rec-key">Código</span><span class="rec-val" id="recCod">—</span></div>
       <div class="rec-row"><span class="rec-key">Receptor</span><span class="rec-val" id="recRec">—</span></div>
       <div class="rec-row"><span class="rec-key">Ruta / Ubicación</span><span class="rec-val" id="recRuta">—</span></div>
       <div class="rec-row"><span class="rec-key">Operador</span><span class="rec-val" id="recOp">—</span></div>
       <div id="recNotaRow" class="rec-row" style="display:none"><span class="rec-key">Nota</span><span class="rec-val" id="recNota">—</span></div>
-
-      <!-- Firma -->
       <div class="rec-sig-section">
         <div class="rec-sig-label">Firma del receptor</div>
-        <img id="recSigImg" src="" alt="Firma">
+        <img id="recSigImg" src="" alt="Firma" crossorigin="anonymous">
       </div>
-
-      <!-- QR de verificación -->
       <div class="rec-qr-section">
         <canvas id="recQrCanvas" width="120" height="120"></canvas>
         <div class="rec-qr-hint">Escanea para verificar este recibo</div>
       </div>
-
-      <!-- Footer -->
-      <div class="rec-footer">
-        Galex · Sistema de Entregas<br>
-        Este documento es comprobante válido de entrega
-      </div>
+      <div class="rec-footer">Galex · Sistema de Entregas<br>Este documento es comprobante válido de entrega</div>
     </div>
-
-    <!-- Acciones -->
     <div class="recibo-actions">
-      <button class="btn btn-outline" onclick="imprimirRecibo()" style="flex:1">🖨️ Imprimir</button>
-      <button class="btn btn-primary" onclick="compartirRecibo()" style="flex:1">📤 Compartir</button>
-      <button class="btn btn-outline" onclick="closeModal('reciboModal')" style="width:48px; flex-shrink:0; padding:0">✕</button>
+      <button class="btn btn-primary" onclick="generarYGuardarPDF()" style="flex:1" id="btnGenerarPdf">📄 Guardar PDF</button>
+      <button class="btn btn-outline" onclick="compartirRecibo()" style="flex:1">📤 Compartir</button>
+      <button class="btn btn-outline" onclick="closeModal('reciboModal')" style="width:44px;flex-shrink:0;padding:0">✕</button>
     </div>
   </div>
 </div>
@@ -531,7 +442,7 @@
     <span class="modal-close" onclick="closeModal('qrModal')">✕</span>
     <div class="modal-title" id="qrModalTitle">Código QR</div>
     <canvas id="qrCanvas" width="200" height="200"></canvas>
-    <div style="text-align:center; font-size:13px; color:var(--text2); margin-top:12px;" id="qrCode"></div>
+    <div style="text-align:center;font-size:13px;color:var(--text2);margin-top:12px" id="qrCode"></div>
     <button class="btn btn-outline" onclick="closeModal('qrModal')" style="margin-top:16px">Cerrar</button>
   </div>
 </div>
@@ -542,27 +453,14 @@
 // ESTADO GLOBAL
 // ═══════════════════════════════════════════
 let state = {
-  step: 1,
-  scannedCode: null,
-  product: null,
-  qty: 1,
-  receptor: '',
-  ruta: '',
-  nota: '',
-  operator: '',
-  sigData: null,
-  inventory: [],
-  history: []
+  step: 1, scannedCode: null, product: null, qty: 1,
+  receptor: '', ruta: '', nota: '', operator: '',
+  inventory: [], history: []
 };
-
-let config = {
-  sheetUrl: '',
-  operator: '',
-  operators: ['Kevin']
-};
-
+let config = { sheetUrl: '', operator: '', operators: ['Kevin'] };
 let scanner = null;
 let sigCanvas, sigCtx, isDrawing = false, lastX, lastY;
+let reciboData = null;
 
 // ═══════════════════════════════════════════
 // INIT
@@ -576,9 +474,7 @@ window.onload = () => {
 
 function loadConfig() {
   const saved = localStorage.getItem('galexConfig');
-  if (saved) {
-    config = { ...config, ...JSON.parse(saved) };
-  }
+  if (saved) config = { ...config, ...JSON.parse(saved) };
   document.getElementById('sheetUrl').value = config.sheetUrl || '';
   document.getElementById('operatorName').value = config.operator || '';
   document.getElementById('operatorDisplay').textContent = config.operator || 'Sin operador';
@@ -611,8 +507,7 @@ function addOperator() {
 }
 
 function renderOperators() {
-  const el = document.getElementById('opList');
-  el.innerHTML = config.operators.map(op =>
+  document.getElementById('opList').innerHTML = config.operators.map(op =>
     `<div class="op-chip">${op} <span class="op-remove" onclick="removeOperator('${op}')">×</span></div>`
   ).join('');
 }
@@ -628,36 +523,28 @@ function removeOperator(name) {
 // ═══════════════════════════════════════════
 function showTab(tab) {
   ['nueva','historial','inventario','config'].forEach(t => {
-    document.getElementById(`page-${t}`)?.classList.remove('active');
-    document.getElementById(`tab-${t}`)?.classList.remove('active');
+    document.getElementById('page-' + t)?.classList.remove('active');
+    document.getElementById('tab-' + t)?.classList.remove('active');
   });
-  document.getElementById(`page-${tab}`)?.classList.add('active');
-  document.getElementById(`tab-${tab}`)?.classList.add('active');
-
+  document.getElementById('page-' + tab)?.classList.add('active');
+  document.getElementById('tab-' + tab)?.classList.add('active');
   if (tab === 'historial') loadHistory();
   if (tab === 'inventario') loadInventory();
 }
 
 // ═══════════════════════════════════════════
-// SCANNER QR
+// SCANNER
 // ═══════════════════════════════════════════
 function startScanner() {
   if (scanner) return;
-  const placeholder = document.getElementById('scanPlaceholder');
-  placeholder.style.display = 'none';
+  document.getElementById('scanPlaceholder').style.display = 'none';
   document.getElementById('scanBox').classList.add('scanning');
-
   scanner = new Html5Qrcode('reader');
-  scanner.start(
-    { facingMode: 'environment' },
-    { fps: 10, qrbox: { width: 220, height: 220 } },
-    (code) => {
-      scanner.stop().then(() => { scanner = null; });
-      processCode(code.trim());
-    },
+  scanner.start({ facingMode: 'environment' }, { fps: 10, qrbox: { width: 220, height: 220 } },
+    (code) => { scanner.stop().then(() => { scanner = null; }); processCode(code.trim()); },
     () => {}
   ).catch(() => {
-    placeholder.style.display = '';
+    document.getElementById('scanPlaceholder').style.display = '';
     document.getElementById('scanBox').classList.remove('scanning');
     scanner = null;
     showToast('⚠ No se pudo acceder a la cámara');
@@ -674,39 +561,29 @@ function manualLookup(val) {
 }
 
 function lookupProduct(code) {
-  const prod = state.inventory.find(p =>
-    p.codigo.toUpperCase() === code.toUpperCase()
-  );
-
+  const prod = state.inventory.find(p => p.codigo.toUpperCase() === code.toUpperCase());
   const found = document.getElementById('productFound');
   const errorEl = document.getElementById('errorProduct');
   const btn = document.getElementById('btnStep1');
   const btnReScan = document.getElementById('btnReScan');
-
   if (prod) {
-    state.scannedCode = code;
-    state.product = prod;
+    state.scannedCode = code; state.product = prod;
     document.getElementById('pName').textContent = prod.nombre;
     document.getElementById('pStock').textContent = prod.stock;
-    found.classList.add('show');
-    errorEl.classList.remove('show');
-    btn.disabled = false;
-    btnReScan.style.display = '';
+    found.classList.add('show'); errorEl.classList.remove('show');
+    btn.disabled = false; btnReScan.style.display = '';
     document.getElementById('scanBox').style.display = 'none';
     document.getElementById('scanPlaceholder').style.display = '';
   } else {
-    found.classList.remove('show');
-    errorEl.classList.add('show');
-    btn.disabled = true;
-    btnReScan.style.display = 'none';
+    found.classList.remove('show'); errorEl.classList.add('show');
+    btn.disabled = true; btnReScan.style.display = 'none';
     state.product = null;
   }
 }
 
 function resetScan() {
   if (scanner) { scanner.stop(); scanner = null; }
-  state.product = null;
-  state.scannedCode = null;
+  state.product = null; state.scannedCode = null;
   document.getElementById('productFound').classList.remove('show');
   document.getElementById('errorProduct').classList.remove('show');
   document.getElementById('manualCode').value = '';
@@ -723,7 +600,7 @@ function resetScan() {
 function setStep(n) {
   state.step = n;
   ['step1','step2','step3'].forEach((s, i) => {
-    document.getElementById(s).style.display = (i+1 === n) ? '' : 'none';
+    document.getElementById(s).style.display = (i + 1 === n) ? '' : 'none';
   });
   document.getElementById('successScreen').classList.remove('show');
   updateStepper(n);
@@ -731,11 +608,8 @@ function setStep(n) {
 
 function updateStepper(n) {
   [1,2,3].forEach(i => {
-    const dot = document.getElementById(`sd${i}`);
-    dot.className = 'step-dot ' + (i < n ? 'done' : i === n ? 'active' : 'pending');
-    if (i < 3) {
-      document.getElementById(`sl${i}`).className = 'step-line ' + (i < n ? 'done' : 'pending');
-    }
+    document.getElementById('sd' + i).className = 'step-dot ' + (i < n ? 'done' : i === n ? 'active' : 'pending');
+    if (i < 3) document.getElementById('sl' + i).className = 'step-line ' + (i < n ? 'done' : 'pending');
   });
 }
 
@@ -768,64 +642,51 @@ function goStep3() {
   state.ruta = document.getElementById('ruta').value.trim();
   state.nota = document.getElementById('nota').value.trim();
   state.qty = getQtyValue();
-
   if (!state.receptor) { showToast('⚠ Ingresa el nombre del receptor'); return; }
   if (!state.ruta) { showToast('⚠ Ingresa la ruta o ubicación'); return; }
   if (state.qty < 1) { showToast('⚠ La cantidad debe ser al menos 1'); return; }
   if (state.qty > state.product.stock) {
     document.getElementById('errorQty').classList.add('show');
-    showToast('⚠ La cantidad supera el stock disponible');
-    return;
+    showToast('⚠ La cantidad supera el stock disponible'); return;
   }
   document.getElementById('errorQty').classList.remove('show');
-
   document.getElementById('sumProd').textContent = state.product.nombre;
   document.getElementById('sumQty').textContent = state.qty + ' unidades';
   document.getElementById('sumRec').textContent = state.receptor;
   document.getElementById('sumRuta').textContent = state.ruta;
   document.getElementById('sumOp').textContent = state.operator || '—';
-
   clearSig();
   setStep(3);
 }
 
-// ─── CANTIDAD (editable + botones) ───
+// ═══════════════════════════════════════════
+// CANTIDAD
+// ═══════════════════════════════════════════
 function getQtyValue() {
   const raw = document.getElementById('qtyDisplay').value.replace(/[^0-9]/g, '');
   return raw === '' ? 0 : parseInt(raw, 10);
 }
-
 function setQty(n) {
-  const input = document.getElementById('qtyDisplay');
-  input.value = String(n);
+  document.getElementById('qtyDisplay').value = String(n);
   state.qty = n;
   validateQty();
 }
-
-// Se dispara mientras el usuario escribe: solo permite dígitos y valida en vivo
 function onQtyInput() {
   const input = document.getElementById('qtyDisplay');
   input.value = input.value.replace(/[^0-9]/g, '');
   state.qty = getQtyValue();
   validateQty();
 }
-
-// Al salir del campo: si quedó vacío o en 0, lo regresa a 1
 function normalizeQty() {
   let n = getQtyValue();
   if (n < 1) n = 1;
   setQty(n);
 }
-
 function validateQty() {
   const err = document.getElementById('errorQty');
-  if (state.product && getQtyValue() > state.product.stock) {
-    err.classList.add('show');
-  } else {
-    err.classList.remove('show');
-  }
+  if (state.product && getQtyValue() > state.product.stock) err.classList.add('show');
+  else err.classList.remove('show');
 }
-
 function changeQty(delta) {
   let next = getQtyValue() + delta;
   if (next < 1) next = 1;
@@ -841,17 +702,12 @@ function initSignature() {
   sigCtx.strokeStyle = '#a78bfa';
   sigCtx.lineWidth = 2.5;
   sigCtx.lineCap = 'round';
-
   const getPos = (e) => {
     const rect = sigCanvas.getBoundingClientRect();
-    const scaleX = sigCanvas.width / rect.width;
-    const scaleY = sigCanvas.height / rect.height;
-    if (e.touches) {
-      return [(e.touches[0].clientX - rect.left) * scaleX, (e.touches[0].clientY - rect.top) * scaleY];
-    }
-    return [(e.clientX - rect.left) * scaleX, (e.clientY - rect.top) * scaleY];
+    const sx = sigCanvas.width / rect.width, sy = sigCanvas.height / rect.height;
+    if (e.touches) return [(e.touches[0].clientX - rect.left) * sx, (e.touches[0].clientY - rect.top) * sy];
+    return [(e.clientX - rect.left) * sx, (e.clientY - rect.top) * sy];
   };
-
   const start = (e) => { isDrawing = true; [lastX, lastY] = getPos(e); e.preventDefault(); };
   const draw = (e) => {
     if (!isDrawing) return;
@@ -861,7 +717,6 @@ function initSignature() {
     [lastX, lastY] = [x, y];
   };
   const end = () => { isDrawing = false; };
-
   sigCanvas.addEventListener('mousedown', start);
   sigCanvas.addEventListener('mousemove', draw);
   sigCanvas.addEventListener('mouseup', end);
@@ -869,19 +724,17 @@ function initSignature() {
   sigCanvas.addEventListener('touchmove', draw, { passive: false });
   sigCanvas.addEventListener('touchend', end);
 }
-
 function clearSig() {
   sigCtx.clearRect(0, 0, sigCanvas.width, sigCanvas.height);
   document.getElementById('errorSig').classList.remove('show');
 }
-
 function isSigEmpty() {
   const data = sigCtx.getImageData(0, 0, sigCanvas.width, sigCanvas.height).data;
   return !data.some((v, i) => i % 4 === 3 && v > 0);
 }
 
 // ═══════════════════════════════════════════
-// CONFIRMAR ENTREGA → GOOGLE SHEETS
+// CONFIRMAR ENTREGA
 // ═══════════════════════════════════════════
 async function confirmarEntrega() {
   if (isSigEmpty()) {
@@ -901,21 +754,15 @@ async function confirmarEntrega() {
   const folio = generarFolio();
 
   const payload = {
-    action: 'registrarEntrega',
-    folio,
-    codigo: state.scannedCode,
-    producto: state.product.nombre,
-    cantidad: state.qty,
-    receptor: state.receptor,
-    ruta: state.ruta,
-    nota: state.nota,
+    action: 'registrarEntrega', folio,
+    codigo: state.scannedCode, producto: state.product.nombre,
+    cantidad: state.qty, receptor: state.receptor,
+    ruta: state.ruta, nota: state.nota,
     operador: state.operator || 'Sin asignar',
-    fecha,
-    hora,
-    firma: sigData
+    fecha, hora, firma: sigData
   };
 
-  // Si no hay URL configurada, guardar localmente y mostrar recibo igual
+  // Sin Sheets: guardar localmente igual
   if (!config.sheetUrl) {
     reciboData = { ...payload };
     const item = state.inventory.find(p => p.codigo === state.scannedCode);
@@ -925,36 +772,25 @@ async function confirmarEntrega() {
     document.getElementById('stepper').style.display = 'none';
     document.getElementById('successScreen').classList.add('show');
     document.getElementById('successMsg').textContent =
-      `${state.qty} cupón(es) de "${state.product.nombre}" entregados a ${state.receptor} (guardado localmente)`;
+      state.qty + ' cupón(es) de "' + state.product.nombre + '" entregados a ' + state.receptor + ' (local)';
     btn.disabled = false;
     btn.innerHTML = '✓ Confirmar entrega';
     return;
   }
 
   try {
-    const res = await fetch(config.sheetUrl, {
-      method: 'POST',
-      body: JSON.stringify(payload)
-    });
+    const res = await fetch(config.sheetUrl, { method: 'POST', body: JSON.stringify(payload) });
     const json = await res.json();
-
     if (json.status === 'ok') {
-      // Guardar datos del recibo
       reciboData = { ...payload };
-
-      // Actualizar stock local
       const item = state.inventory.find(p => p.codigo === state.scannedCode);
       if (item) item.stock -= state.qty;
-
-      // Agregar a historial local
       state.history.unshift({ ...payload, id: Date.now() });
-
-      // Mostrar éxito
       ['step1','step2','step3'].forEach(s => document.getElementById(s).style.display = 'none');
       document.getElementById('stepper').style.display = 'none';
       document.getElementById('successScreen').classList.add('show');
       document.getElementById('successMsg').textContent =
-        `${state.qty} cupón(es) de "${state.product.nombre}" entregados a ${state.receptor}`;
+        state.qty + ' cupón(es) de "' + state.product.nombre + '" entregados a ' + state.receptor;
     } else {
       throw new Error(json.message || 'Error en servidor');
     }
@@ -976,45 +812,32 @@ function resetForm() {
 // INVENTARIO
 // ═══════════════════════════════════════════
 async function loadInventory() {
-  if (!config.sheetUrl) {
-    renderInventory([]);
-    return;
-  }
+  if (!config.sheetUrl) { renderInventory([]); return; }
   try {
-    const res = await fetch(`${config.sheetUrl}?action=getInventario`);
+    const res = await fetch(config.sheetUrl + '?action=getInventario');
     const json = await res.json();
     state.inventory = json.data || [];
     renderInventory(state.inventory);
-  } catch {
-    renderInventory(state.inventory);
-  }
+  } catch { renderInventory(state.inventory); }
 }
 
 function renderInventory(items) {
   const el = document.getElementById('inventarioList');
   if (!items.length) {
-    el.innerHTML = `<div class="empty-state"><div class="empty-icon">📊</div>
-      Sin productos.<br><small>Agrega productos en tu Google Sheet.</small></div>`;
+    el.innerHTML = '<div class="empty-state"><div class="empty-icon">📊</div>Sin productos.<br><small>Agrega productos en tu Google Sheet.</small></div>';
     return;
   }
-  const totalItems = items.reduce((a, b) => a + (parseInt(b.stock) || 0), 0);
-  el.innerHTML = `
-    <div class="card" style="margin-bottom:16px; display:flex; justify-content:space-around; text-align:center;">
-      <div><div style="font-size:24px;font-weight:700">${items.length}</div><div style="font-size:12px;color:var(--text2)">Productos</div></div>
-      <div><div style="font-size:24px;font-weight:700">${totalItems}</div><div style="font-size:12px;color:var(--text2)">Unidades total</div></div>
-    </div>
-    <div class="card">
-      ${items.map(p => `
-        <div class="inv-row">
-          <div class="inv-qr-btn" onclick="showQR('${p.codigo}','${p.nombre}')">⬛</div>
-          <div>
-            <div class="inv-name">${p.nombre}</div>
-            <div class="inv-code">${p.codigo}</div>
-          </div>
-          <div class="inv-stock ${parseInt(p.stock) <= (parseInt(p.minimo)||0) ? 'low' : 'ok'}">${p.stock}</div>
-        </div>
-      `).join('')}
-    </div>`;
+  const total = items.reduce((a, b) => a + (parseInt(b.stock) || 0), 0);
+  el.innerHTML = '<div class="card" style="margin-bottom:16px;display:flex;justify-content:space-around;text-align:center">'
+    + '<div><div style="font-size:24px;font-weight:700">' + items.length + '</div><div style="font-size:12px;color:var(--text2)">Productos</div></div>'
+    + '<div><div style="font-size:24px;font-weight:700">' + total + '</div><div style="font-size:12px;color:var(--text2)">Unidades total</div></div>'
+    + '</div><div class="card">'
+    + items.map(p => '<div class="inv-row">'
+      + '<div class="inv-qr-btn" onclick="showQR(\'' + p.codigo + '\',\'' + p.nombre + '\')">⬛</div>'
+      + '<div><div class="inv-name">' + p.nombre + '</div><div class="inv-code">' + p.codigo + '</div></div>'
+      + '<div class="inv-stock ' + (parseInt(p.stock) <= (parseInt(p.minimo) || 0) ? 'low' : 'ok') + '">' + p.stock + '</div>'
+      + '</div>').join('')
+    + '</div>';
 }
 
 function showQR(codigo, nombre) {
@@ -1022,11 +845,10 @@ function showQR(codigo, nombre) {
   document.getElementById('qrCode').textContent = codigo;
   const canvas = document.getElementById('qrCanvas');
   const ctx = canvas.getContext('2d');
-  ctx.clearRect(0,0,200,200);
-  // Usar img con API pública de QR
+  ctx.clearRect(0, 0, 200, 200);
   const img = new Image();
   img.crossOrigin = 'anonymous';
-  img.src = `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(codigo)}&color=6c63ff&bgcolor=1a1a2e`;
+  img.src = 'https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=' + encodeURIComponent(codigo) + '&color=6c63ff&bgcolor=1a1a2e';
   img.onload = () => ctx.drawImage(img, 0, 0, 200, 200);
   document.getElementById('qrModal').classList.add('show');
 }
@@ -1035,47 +857,44 @@ function showQR(codigo, nombre) {
 // HISTORIAL
 // ═══════════════════════════════════════════
 async function loadHistory() {
-  if (!config.sheetUrl) {
-    renderHistory([]);
-    return;
-  }
+  if (!config.sheetUrl) { renderHistory([]); return; }
   try {
-    const res = await fetch(`${config.sheetUrl}?action=getHistorial`);
+    const res = await fetch(config.sheetUrl + '?action=getHistorial');
     const json = await res.json();
     state.history = json.data || [];
     renderHistory(state.history);
-  } catch {
-    renderHistory(state.history);
-  }
+  } catch { renderHistory(state.history); }
 }
 
 function renderHistory(items) {
   const el = document.getElementById('historialList');
   if (!items.length) {
-    el.innerHTML = `<div class="empty-state"><div class="empty-icon">📋</div>Sin entregas aún.</div>`;
+    el.innerHTML = '<div class="empty-state"><div class="empty-icon">📋</div>Sin entregas aún.</div>';
     return;
   }
-  el.innerHTML = items.slice(0, 50).map(e => `
-    <div class="entry-card">
-      <div class="entry-header">
-        <div class="entry-product">${e.producto || e.codigo}</div>
-        <div class="entry-qty">${e.cantidad}</div>
-      </div>
-      <div class="entry-meta">
-        <span>👤 ${e.receptor}</span>
-        <span>📍 ${e.ruta}</span>
-        <span class="badge badge-op">⚙ ${e.operador}</span>
-        <span style="margin-left:auto">${e.fecha} ${e.hora}</span>
-      </div>
-    </div>
-  `).join('');
+  el.innerHTML = items.slice(0, 50).map(e => {
+    const tienePdf = e.pdfUrl && e.pdfUrl.length > 5;
+    const folioBadge = e.folio ? '<span class="badge badge-folio">' + e.folio + '</span>' : '';
+    const pdfBtn = tienePdf
+      ? '<a href="' + e.pdfUrl + '" target="_blank" class="entry-btn pdf">📄 Ver PDF</a>'
+      : '<div class="entry-btn no-pdf">📄 Sin PDF</div>';
+    const regenBtn = '<div class="entry-btn" onclick=\'regenerarRecibo(' + JSON.stringify(e).replace(/'/g,"&#39;") + ')\'>🧾 Recibo</div>';
+    return '<div class="entry-card">'
+      + '<div class="entry-header"><div class="entry-product">' + (e.producto || e.codigo) + '</div><div class="entry-qty">' + e.cantidad + '</div></div>'
+      + '<div class="entry-meta">'
+      + '<span>👤 ' + e.receptor + '</span><span>📍 ' + e.ruta + '</span>'
+      + '<span class="badge badge-op">⚙ ' + e.operador + '</span>'
+      + folioBadge
+      + '<span style="margin-left:auto">' + e.fecha + ' ' + e.hora + '</span>'
+      + '</div>'
+      + '<div class="entry-actions">' + regenBtn + pdfBtn + '</div>'
+      + '</div>';
+  }).join('');
 }
 
 // ═══════════════════════════════════════════
 // RECIBO
 // ═══════════════════════════════════════════
-let reciboData = null;
-
 function generarFolio() {
   const now = new Date();
   const d = String(now.getDate()).padStart(2,'0');
@@ -1084,22 +903,37 @@ function generarFolio() {
   const h = String(now.getHours()).padStart(2,'0');
   const min = String(now.getMinutes()).padStart(2,'0');
   const rand = String(Math.floor(Math.random()*9000)+1000);
-  return `GX-${y}${m}${d}-${h}${min}-${rand}`;
+  return 'GX-' + y + m + d + '-' + h + min + '-' + rand;
 }
 
 function abrirRecibo() {
   if (!reciboData) return;
-  const d = reciboData;
+  poblarTicket(reciboData);
+  document.getElementById('btnGenerarPdf').disabled = false;
+  document.getElementById('btnGenerarPdf').innerHTML = '📄 Guardar PDF';
+  document.getElementById('reciboModal').classList.add('show');
+}
 
-  document.getElementById('recFolio').textContent = d.folio;
-  document.getElementById('recDatetime').textContent = d.fecha + '  ' + d.hora;
+// Regenerar recibo para entregas históricas (sin firma guardada muestra placeholder)
+function regenerarRecibo(entry) {
+  reciboData = entry;
+  // Si la entrada no tiene firma, ponemos un placeholder
+  if (!entry.firma) entry.firma = '';
+  poblarTicket(entry);
+  document.getElementById('btnGenerarPdf').disabled = false;
+  document.getElementById('btnGenerarPdf').innerHTML = '📄 Guardar PDF';
+  document.getElementById('reciboModal').classList.add('show');
+}
+
+function poblarTicket(d) {
+  document.getElementById('recFolio').textContent = d.folio || 'Sin folio';
+  document.getElementById('recDatetime').textContent = (d.fecha || '') + '  ' + (d.hora || '');
   document.getElementById('recQty').textContent = d.cantidad;
-  document.getElementById('recProd').textContent = d.producto;
-  document.getElementById('recCod').textContent = d.codigo;
+  document.getElementById('recProd').textContent = d.producto || d.codigo;
+  document.getElementById('recCod').textContent = d.codigo || '—';
   document.getElementById('recRec').textContent = d.receptor;
   document.getElementById('recRuta').textContent = d.ruta;
-  document.getElementById('recOp').textContent = d.operador;
-
+  document.getElementById('recOp').textContent = d.operador || '—';
   const notaRow = document.getElementById('recNotaRow');
   if (d.nota) {
     document.getElementById('recNota').textContent = d.nota;
@@ -1107,11 +941,16 @@ function abrirRecibo() {
   } else {
     notaRow.style.display = 'none';
   }
-
   // Firma
-  document.getElementById('recSigImg').src = d.firma;
-
-  // QR con datos del recibo
+  const sigImg = document.getElementById('recSigImg');
+  if (d.firma && d.firma.startsWith('data:')) {
+    sigImg.src = d.firma;
+    sigImg.style.display = 'block';
+  } else {
+    sigImg.src = '';
+    sigImg.style.display = 'none';
+  }
+  // QR
   const qrData = JSON.stringify({
     folio: d.folio, producto: d.producto, cantidad: d.cantidad,
     receptor: d.receptor, ruta: d.ruta, operador: d.operador,
@@ -1119,67 +958,132 @@ function abrirRecibo() {
   });
   const canvas = document.getElementById('recQrCanvas');
   const ctx = canvas.getContext('2d');
-  ctx.clearRect(0,0,120,120);
+  ctx.clearRect(0, 0, 120, 120);
   const img = new Image();
   img.crossOrigin = 'anonymous';
-  img.src = `https://api.qrserver.com/v1/create-qr-code/?size=120x120&data=${encodeURIComponent(qrData)}&color=6c63ff&bgcolor=ffffff`;
+  img.src = 'https://api.qrserver.com/v1/create-qr-code/?size=120x120&data=' + encodeURIComponent(qrData) + '&color=6c63ff&bgcolor=ffffff';
   img.onload = () => ctx.drawImage(img, 0, 0, 120, 120);
-
-  document.getElementById('reciboModal').classList.add('show');
 }
 
-function imprimirRecibo() {
-  const ticket = document.getElementById('reciboTicket');
-  const printArea = document.getElementById('printArea');
-  printArea.innerHTML = ticket.outerHTML;
-  printArea.style.display = 'block';
-  window.print();
-  setTimeout(() => {
-    printArea.style.display = 'none';
-    printArea.innerHTML = '';
-  }, 1000);
+// ─── GENERAR PDF Y SUBIR A DRIVE ───
+async function generarYGuardarPDF() {
+  const d = reciboData;
+  if (!d) return;
+
+  const btn = document.getElementById('btnGenerarPdf');
+  btn.disabled = true;
+  btn.innerHTML = '<div class="loader"></div>';
+
+  const genOverlay = document.getElementById('pdfGenerating');
+  const genMsg = document.getElementById('pdfGenMsg');
+  genOverlay.classList.add('show');
+  genMsg.textContent = 'Renderizando recibo...';
+
+  try {
+    // 1. Esperar a que el QR cargue (si aún no terminó)
+    await new Promise(r => setTimeout(r, 800));
+
+    // 2. Capturar el ticket como imagen con html2canvas
+    genMsg.textContent = 'Capturando imagen...';
+    const ticket = document.getElementById('reciboTicket');
+    const canvas = await html2canvas(ticket, {
+      scale: 2,
+      useCORS: true,
+      backgroundColor: '#ffffff',
+      logging: false
+    });
+
+    // 3. Construir PDF con jsPDF
+    genMsg.textContent = 'Generando PDF...';
+    const { jsPDF } = window.jspdf;
+    const imgData = canvas.toDataURL('image/jpeg', 0.92);
+    const pxToMm = (px) => px * 0.264583;
+    const pdfW = pxToMm(canvas.width / 2);  // dividir por scale=2
+    const pdfH = pxToMm(canvas.height / 2);
+    const pdf = new jsPDF({ orientation: 'portrait', unit: 'mm', format: [pdfW, pdfH] });
+    pdf.addImage(imgData, 'JPEG', 0, 0, pdfW, pdfH);
+
+    const pdfBase64 = pdf.output('datauristring').split(',')[1];
+    const nombreArchivo = 'Recibo_' + (d.folio || 'GX') + '.pdf';
+
+    // 4. Descargar localmente siempre
+    pdf.save(nombreArchivo);
+
+    // 5. Si hay Sheets/Drive configurado, subir
+    if (config.sheetUrl) {
+      genMsg.textContent = 'Subiendo a Google Drive...';
+      try {
+        const res = await fetch(config.sheetUrl, {
+          method: 'POST',
+          body: JSON.stringify({
+            action: 'guardarPdfDrive',
+            folio: d.folio || '',
+            nombre: nombreArchivo,
+            pdfBase64
+          })
+        });
+        const json = await res.json();
+        if (json.status === 'ok' && json.driveUrl) {
+          // Actualizar la entrada en historial con el link
+          const idx = state.history.findIndex(h => h.folio === d.folio);
+          if (idx >= 0) state.history[idx].pdfUrl = json.driveUrl;
+          reciboData.pdfUrl = json.driveUrl;
+          showToast('✅ PDF guardado en Drive');
+        } else {
+          showToast('⚠ PDF descargado, no se subió a Drive');
+        }
+      } catch (e) {
+        showToast('⚠ PDF descargado localmente. Error al subir a Drive.');
+      }
+    } else {
+      showToast('✅ PDF descargado');
+    }
+
+    btn.innerHTML = '✅ PDF listo';
+  } catch (err) {
+    showToast('❌ Error al generar PDF: ' + err.message);
+    btn.disabled = false;
+    btn.innerHTML = '📄 Guardar PDF';
+  } finally {
+    genOverlay.classList.remove('show');
+  }
 }
 
+// ─── COMPARTIR ───
 async function compartirRecibo() {
   const d = reciboData;
   if (!d) return;
   const lineas = [
     '🧾 RECIBO DE ENTREGA — GALEX',
-    'Folio: ' + d.folio,
-    '📅 ' + d.fecha + ' ' + d.hora,
+    'Folio: ' + (d.folio || 'Sin folio'),
+    '📅 ' + (d.fecha || '') + ' ' + (d.hora || ''),
     '────────────────────',
-    'Producto: ' + d.producto,
-    'Código:   ' + d.codigo,
+    'Producto: ' + (d.producto || d.codigo),
+    'Código:   ' + (d.codigo || ''),
     'Cantidad: ' + d.cantidad + ' cupones',
     '────────────────────',
     'Receptor: ' + d.receptor,
     'Ruta:     ' + d.ruta,
-    'Operador: ' + d.operador,
+    'Operador: ' + (d.operador || ''),
   ];
   if (d.nota) lineas.push('Nota:     ' + d.nota);
+  if (d.pdfUrl) lineas.push('PDF: ' + d.pdfUrl);
   lineas.push('────────────────────');
   lineas.push('Galex · Sistema de Entregas');
   const texto = lineas.join('\n');
-
   if (navigator.share) {
-    try {
-      await navigator.share({ title: 'Recibo ' + d.folio, text: texto });
-      return;
-    } catch(e) {}
+    try { await navigator.share({ title: 'Recibo ' + (d.folio || ''), text: texto }); return; } catch(e) {}
   }
-  // Fallback: copiar al portapapeles
   try {
     await navigator.clipboard.writeText(texto);
     showToast('📋 Recibo copiado al portapapeles');
-  } catch {
-    showToast('⚠ No se pudo compartir');
-  }
+  } catch { showToast('⚠ No se pudo compartir'); }
 }
 
 // ═══════════════════════════════════════════
 // UTILS
 // ═══════════════════════════════════════════
-function showToast(msg, duration=3000) {
+function showToast(msg, duration=3500) {
   const t = document.getElementById('toast');
   t.textContent = msg;
   t.classList.remove('hide');
